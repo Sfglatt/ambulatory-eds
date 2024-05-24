@@ -130,7 +130,7 @@ dedatsd <- bind_cols(dat[,7:8], dedatsd)
 dayvar <- "dayvar"
 beepvar <- "beepvar"
 
-# estimate network
+# Estimate network
 NetMean <- graphicalVAR(dat_means, 
                         vars = names.means, 
                         dayvar = dayvar, 
@@ -140,7 +140,7 @@ NetMean <- graphicalVAR(dat_means,
                         lambda_kappa = 0, 
                         verbose = FALSE)
 
-# save graphs separately to make it easier for formatting later.
+# Save graphs
 pdf("PR003_network_means_PCC.pdf", height = 5, width = 8)
 pcc_m <- plot(NetMean, "PCC", labels = names.means, edge.labels = TRUE, layout = "spring")
 dev.off()
