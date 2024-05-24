@@ -221,7 +221,7 @@ dat <- dat %>% relocate(cumsumT, .after = tdif)
 dat[, c(1:10)]
 dat <- dat[-c(which(colnames(dat) == "date"), which(colnames(dat) == "time"))]
 
-# Save data in CVS form
+# Save data in CSV form
 name <- paste0(id_name, '_rawwithtime')
 filetype <- '.csv'
 filename <- paste(name, Sys.Date(), filetype, sep = '')
