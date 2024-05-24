@@ -1,0 +1,230 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r Github}
+# usethis::create_from_github("https://github.com/Sfglatt/ED_idiographic_networks.git",
+# destdir = "C:/Users/sofel/OneDrive/Documents/Labs/Github/ED_idiographic_net")
+```
+
+```{r Workspace and packages}
+# clear work space
+rm(list=ls())
+
+# set the participant ID name; here I'm analyzing PR003
+id_name = "PR003" 
+# id_name=gsub(".*/", "", getwd()) 
+
+if (!require("cowplot")) {install.packages("cowplot"); require("cowplot")} 
+if (!require("devtools")) {install.packages("devtools"); require("devtools")} 
+# devtools::install_github("cecusack/clairecleans") # if you haven't installed this package, uncomment
+if (!require("ggpubr")) {install.packages("ggpubr"); require("ggpubr")} #
+if (!require("graphicalVAR")) {install.packages("graphicalVAR"); require("graphicalVAR")} s
+if (!require("grid")) {install.packages("grid"); require("grid")} # figs
+if (!require("gridExtra")) {install.packages("gridExtra"); require("gridExtra")} 
+if (!require("here")) {install.packages("here"); require("here")}
+if (!require("imputeTS")) {install.packages("imputeTS"); require("imputeTS")} 
+if (!require("psych")) {install.packages("psych"); require("psych")} 
+if (!require("tidyverse")) {install.packages("tidyverse"); require("tidyverse")} 
+if (!require("tseries")) {install.packages("tseries"); require("tseries")} 
+if (!require("qgraph")) {install.packages("qgraph"); require("qgraph")}
+```
+
+```{r packages}
+# Directory to save results
+dir.create(paste0(getwd(), "/results")) 
+
+res_dir <- paste0(getwd(), "/results")
+# function to lag dat by 1
+# lagpad <- function(x, k) {
+#      c(rep(NA, k), x)[1 : length(x)] 
+#  }
+
+# Import the data
+morn_import <- read.csv(dir(pattern='.csv$')[1], na.strings = c("", " "))
+dim(morn_import) # 31 x 75
+aft_import <- read.csv(dir(pattern='.csv$')[2], na.strings = c("", " "))
+dim(aft_import)  # 62 x 73
+eve_import <- read.csv(dir(pattern='.csv$')[3], na.strings = c("", " "))
+dim(eve_import)  # 30 x 97
+
+morn <- morn_import
+aft <- aft_import
+eve <- eve_import
+
+# Clean up the data
+# Morning EMA
+if (any(names(morn) == "Duration..seconds..from.scheduled.to.completion.time")) {
+  morn <- morn[-c(which(colnames(morn) == "Device.ID"):which(colnames(morn) == "Issued.Time"),
+                  which(colnames(morn) == "Duration..seconds..from.scheduled.to.completion.time"):which(colnames(morn) == "Location"))]
+} else {
+  morn <- morn[-c(which(colnames(morn) == "Device.ID"):which(colnames(morn) == "Issued.Time"),
+                  which(colnames(morn) == "Duration..minutes."):which(colnames(morn) == "Location"))]
+}
+
+# Afternoon EMA
+if (any(names(aft) == "Duration..seconds..from.scheduled.to.completion.time")) {
+  aft <- aft[-c(which(colnames(aft) == "Device.ID"):which(colnames(aft) == "Issued.Time"),
+                which(colnames(aft) == "Duration..seconds..from.scheduled.to.completion.time"):which(colnames(aft) == "Location"))]
+} else {
+  aft <- aft[-c(which(colnames(aft) == "Device.ID"):which(colnames(aft) == "Issued.Time"),
+                which(colnames(aft) == "Duration..minutes."):which(colnames(aft) == "Location"))]
+}
+
+# Evening EMA
+if (any(names(eve) == "Duration..seconds..from.scheduled.to.completion.time")) {
+  eve <- eve[-c(which(colnames(eve) == "Device.ID"):which(colnames(eve) == "Issued.Time"),
+                which(colnames(eve) == "Duration..seconds..from.scheduled.to.completion.time"):which(colnames(eve) == "Location"))]
+} else {
+  eve <- eve[-c(which(colnames(eve) == "Device.ID"):which(colnames(eve) == "Issued.Time"),
+                which(colnames(eve) == "Duration..minutes."):which(colnames(eve) == "Location"))]
+}
+
+# setdiff(names(morn), names(aft)) # vas 2 slept well. current menst
+# setdiff(names(morn), names(eve)) # sleep and menst
+# setdiff(names(eve), names(morn))
+
+# Read in a file with morning EMA
+mornname <- scan("mornname.txt", what = "character", sep = "\n")
+
+if (dim(morn)[2] == 72) {
+  colnames(morn) <- Morn_name[-70]
+} else if (dim(morn)[2] == 71) {
+  colnames(morn) <- Morn_name[-c(68, 69)]
+} else {
+  colnames(morn) <- Morn_name[-c(68:70)]
+}
+
+colnames(aft) <- colnames(morn)[-c(3:4)]
+
+# Read in a file with evening EMA
+evename <- scan("evename.txt", what = "character", sep = "\n")
+if (dim(morn)[2] == 72) {
+  colnames(eve)[1:70] <- Morn_name[-c(3:4, 70)]
+  colnames(eve)[71:ncol(eve)] <- Eve_name
+} else if (dim(morn)[2] == 71) {
+  colnames(eve)[1:69] <- Morn_name[-c(3:4, 68:69)]
+  colnames(eve)[70:ncol(eve)] <- Eve_name
+} else {
+  colnames(eve)[1:68] <- Morn_name[-c(3:4, 68:70)]
+  colnames(eve)[69:ncol(eve)] <- Eve_name
+}
+
+# Merge the EMA timepoints
+dat <- plyr::rbind.fill(morn, aft, eve)
+# & Arrange un order
+dat <- dat %>% dplyr::arrange(ethica_time)
+
+# Add a day and beep variable
+dat$day <- dat$ethica_time
+dat <- dat %>% relocate(day, .after = ethica_time)
+# Just remove completely empty rows
+if (dim(dat[is.na(dat$ethica_time), ])[1] > 0) {
+  dat <- dat[!is.na(dat$ethica_time), ]
+} else {
+  dat <- dat
+}
+
+if (sub(".* ([A-Z])", "\\1", dat$ethica_time)[1] == "CDT" | sub(".* ([A-Z])", "\\1", dat$ethica_time)[1] == "CST") {
+  dat$ethica_time <- as.POSIXct(dat$ethica_time, tz = "America/Chicago")
+} else if (sub(".* ([A-Z])", "\\1", dat$ethica_time)[1] == "EST" | sub(".* ([A-Z])", "\\1", dat$ethica_time)[1] == "EDT") {
+  dat$ethica_time <- as.POSIXct(dat$ethica_time, tz = "America/New_York")
+} else if (sub(".* ([A-Z])", "\\1", dat$ethica_time)[1] == "MST" | sub(".* ([A-Z])", "\\1", dat$ethica_time)[1] == "MDT") {
+  dat$ethica_time <- as.POSIXct(dat$ethica_time, tz = "America/Denver")
+} else {
+  dat$ethica_time <- as.POSIXct(dat$ethica_time, tz = "America/Los_Angeles")
+}
+
+dat$ethica_time_utc <- dat$ethica_time
+dat <- dat %>% relocate(ethica_time_utc, .after = ethica_time)
+dat$ethica_time_utc <- format(dat$ethica_time_utc, tz = "UTC")
+dat$ethica_time_utc <- as.POSIXct(format(dat$ethica_time_utc, tz = "UTC"), tz = "UTC")
+attributes(dat$ethica_time)$tzone # est
+attributes(dat$ethica_time_utc)$tzone # UTC
+
+dat$day <- gsub("\\s*\\w*$", "", dat$day)
+dat <- dat %>% separate(day, c("date", "time"), sep = " ", fill = "right")
+
+# Duplicate sleep response 
+dat <- dat %>%
+  dplyr::group_by(date) %>%
+  fill(sleep, .direction = "down") %>%
+  fill(menst_yn, .direction = "down") %>% 
+  dplyr::ungroup()
+
+# dat[dat=="(ID 1) Yes"]<- "yes"
+# dat[dat=="(ID 2) No"]<- "no"
+
+dat$ID = id_name
+
+sum(is.na(dat[,-c(1:5)]))/prod(dim(dat[,-c(1:5)])) 
+
+# Only keep continuous 0-100 items; remove y/n vars and the ones at the end of the day
+dat <- dat[-c(which(colnames(dat) == "location"):ncol(dat))]
+dat <- dat[, -grep("yn$|describe$", colnames(dat))] 
+
+# Check missingness
+sum(is.na(dat[,-c(1:5)]))/prod(dim(dat[,-c(1:5)])) 
+
+# look
+head(dat, 12) # Look at 3 days worth of data (x4 daily assessments)
+```
+
+```{r Day and beep variables}
+# Convert date column to class date
+dat$date <- as.Date(dat$date, "%Y-%m-%d")
+
+# Day variable
+dat <- dat %>% 
+  mutate(date = lubridate::as_date(date)) %>% 
+  mutate(dayvar = cumsum(!duplicated(date))) %>% 
+  mutate(beepconsec = seq(1:n())) %>% 
+  relocate(dayvar, .after = time) %>% 
+  relocate(beepconsec, .after = dayvar)
+
+# Beep variable
+dat <- dat %>% 
+  group_by(date) %>%
+  mutate(beepvar = seq(1:n())) %>% 
+  ungroup() %>% 
+  relocate(beepvar, .after = dayvar)
+
+describe(dat[6:8]) 
+```
+
+```{r Deal with time}
+# Dealing with time:
+
+# Make a new variable that places time in the row below (a lag)
+dat <- dat %>% mutate(lag = lag(ethica_time)) %>% relocate(lag, .after = ethica_time)
+
+# Calculate time differences
+dat$tdif <- as.numeric(difftime(strptime(dat$ethica_time, "%Y-%m-%d %H:%M:%S"), strptime(dat$lag, "%Y-%m-%d %H:%M:%S"))) # subtracting time from time lag
+
+# Check. Lag should have the values of start moved down one row
+head(dat[, c(which(colnames(dat) == "ethica_time"), which(colnames(dat) == "lag"), which(colnames(dat) == "tdif"))]) 
+
+# Remove night lag
+dat$tdif <- ifelse(dat$beepvar == 1, dat$tdif == 0, dat$tdif)
+dat <- dat %>% relocate(tdif, .after = lag)
+
+# Replace NA for first col
+dat$tdif[is.na(dat$tdif)] <- 0
+
+dat %>% select(ethica_time, lag, tdif)
+
+# Calculate cumulative sum of numeric elapsed time 
+dat$cumsumT <- cumsum(dat$tdif)
+dat <- dat %>% relocate(cumsumT, .after = tdif)
+# Look at it
+dat[, c(1:10)]
+dat <- dat[-c(which(colnames(dat) == "date"), which(colnames(dat) == "time"))]
+
+# Save data in CVS form
+name <- paste0(id_name, '_rawwithtime')
+filetype <- '.csv'
+filename <- paste(name, Sys.Date(), filetype, sep = '')
+write.csv(dat, file = filename, row.names = FALSE)
+```
+
