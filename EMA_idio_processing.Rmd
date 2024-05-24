@@ -228,3 +228,33 @@ filename <- paste(name, Sys.Date(), filetype, sep = '')
 write.csv(dat, file = filename, row.names = FALSE)
 ```
 
+```{r Impute data directory}
+# Directory to save imputed results
+dir.create(paste0(getwd(), "/Imputed_results"))
+res_dir <- paste0(getwd(), "/Imputed_results")
+```
+
+```{r Impute data}
+# `na_kalman` is better imputation for time-series data 
+# cc  Mansueto et al. (2022). Investigating the Feasibility of Idiographic Networks. Psychological Methods;  https://psyarxiv.com/hgcz6/ 10.1037/met0000466
+
+# import dataset (if already ran the above processing chunks): 
+PR003_dat <- read.csv("PR003_rawwithtime2022-07-03.csv")
+
+# impute
+imp_kalman <- na_kalman(PR003_dat[10:ncol(PR003_dat # dat
+                                          )], model = "StructTS", smooth = TRUE)
+imp_kalman <- cbind(PR003_dat[1:9],imp_kalman) 
+
+PR003_dat <- imp_kalman 
+
+# Check missingness
+sum(is.na(PR003_dat[-c(1:9)]))/prod(dim(PR003_dat[-c(1:9)])) # 0 is good
+# if it isn't 0, find out where the missing values are
+sum(is.na(PR003_dat[-c(1:9)])) 
+PR003_dat[rowSums(is.na(PR003_dat[-c(1:9)])) > 0, ] # dayvar = 1, beepvar =1
+colSums(is.na(PR003_dat))
+
+#### save imputed data ####
+write.csv(PR003_dat, "PR003_IMPUTED.csv", row.names = FALSE)
+```
