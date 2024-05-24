@@ -19,8 +19,9 @@ id_name = "PR003"
 if (!require("cowplot")) {install.packages("cowplot"); require("cowplot")} 
 if (!require("devtools")) {install.packages("devtools"); require("devtools")} 
 # devtools::install_github("cecusack/clairecleans") # if you haven't installed this package, uncomment
+if (!require("devtools")) {install.packages("devtools"); require("devtools")} 
 if (!require("ggpubr")) {install.packages("ggpubr"); require("ggpubr")} #
-if (!require("graphicalVAR")) {install.packages("graphicalVAR"); require("graphicalVAR")} s
+if (!require("graphicalVAR")) {install.packages("graphicalVAR"); require("graphicalVAR")} 
 if (!require("grid")) {install.packages("grid"); require("grid")} # figs
 if (!require("gridExtra")) {install.packages("gridExtra"); require("gridExtra")} 
 if (!require("here")) {install.packages("here"); require("here")}
@@ -258,3 +259,14 @@ colSums(is.na(PR003_dat))
 #### save imputed data ####
 write.csv(PR003_dat, "PR003_IMPUTED.csv", row.names = FALSE)
 ```
+
+```{r Mutate sleep!}
+## import rawith time
+dat <- read.csv("C:/Users/sofel/Box/PR Data/PR003/PR003_rawwithtime2022-07-03.csv")
+head(dat)
+
+# reverse score sleep (0-100 scale)
+dat <- dat %>% 
+  dplyr::mutate(sleep = 100 - sleep)
+```
+
