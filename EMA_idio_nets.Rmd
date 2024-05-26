@@ -41,7 +41,6 @@ dat_sd <- dat[,c("ID",
                  names.sd)]
 
 # save these dataframes
-file_path <- "Data/PR010"
 name <- paste0(id_name, "_means")
 filename <- paste(name, Sys.Date(), filetype, sep = '')
 full_filename <- file.path(file_path, filename)
@@ -122,7 +121,7 @@ dedatm <- bind_cols(dat[,7:8], dedatm)
 
 dat_sd <- dat_sd[,10:ncol(dat_sd)]
 dedatsd <- data.frame(matrix(ncol = dim(dat_sd)[2], nrow = dim(dat_sd[1]))) # empty mat to fill with resid
-colnames(dedatsd) <- colnames(dat_sd) # fix colnames
+colnames(dedatsd) <- colnames(dat_sd)
 
 # detrend
 for(i in 1:ncol(dedatsd)) {
@@ -149,19 +148,16 @@ NetMean <- graphicalVAR(dat_means,
                         verbose = FALSE)
 
 # Save graphs
-pdf("Raw_results/PR010_network_means_PCC.pdf", height = 5, width = 8)
+pdf(paste0("Raw_results/", id_name, "_network_means_PCC.pdf"), height = 5, width = 8)
 pcc_m <- plot(NetMean, "PCC", labels = names.means, edge.labels = TRUE, layout = "spring")
 dev.off()
 
-pdf("Raw_results/PR010_network_means_PDC.pdf", height = 5, width = 8)
+pdf(paste0("Raw_results/", id_name, "_network_means_PDC.pdf"), height = 5, width = 8)
 pdc_m <- plot(NetMean, "PDC", labels = names.means)
 dev.off()
 
-pdf("Raw_results/PR010_networks_means.pdf", height = 5, width = 8)
-plot(NetMean, 
-     labels = names.means, 
-     edge.labels = TRUE, 
-     layout="spring")
+pdf(paste0("Raw_results/", id_name, "_networks_means.pdf"), height = 5, width = 8)
+plot(NetMean, labels = names.means, edge.labels = TRUE, layout = "spring")
 dev.off()
 
 # create and save centrality plots
@@ -174,19 +170,19 @@ PR010_centplotm <- plot(NetMean,
   facet_grid(rows = vars(measure)) +
   theme(axis.text = element_text(size = 13),
         strip.text.y = element_text(size = 15))
-ggsave(PR010_centplotm, filename = "Raw_results/PR010_centrality_means.png")
+ggsave(PR010_centplotm, filename = paste0("Raw_results/", id_name, "_centrality_means.png"))
 
-# centrality tables
+# Centrality tables
 centr_m <- clairecleans::gather_cent(pcc_m, pdc_m)
 rm(centr)
-write.csv(centr_m, "Raw_results/PR010_centr_means.csv", row.names = FALSE)
+write.csv(centr_m, paste0("Raw_results/", id_name, "_centr_means.csv"), row.names = FALSE)
 
-# node correlations. Get edge list and weights
-(pcc_corr_m <- data.frame(pcc_m[[1]][[2]][[6]]))
-write.csv(pcc_corr_m, "Raw_results/PR010_pcc_corr_means.csv", row.names = TRUE)
+# Node correlations. Get edge list and weights
+pcc_corr_m <- data.frame(pcc_m[[1]][[2]][[6]])
+write.csv(pcc_corr_m, paste0("Raw_results/", id_name, "_pcc_corr_means.csv"), row.names = TRUE)
 
-(pdc_corr_m <- data.frame(pdc_m[[1]][[2]][[5]]))
-write.csv(pdc_corr_m, "Raw_results/PR010_pdc_corr_means.csv", row.names = TRUE)
+pdc_corr_m <- data.frame(pdc_m[[1]][[2]][[5]])
+write.csv(pdc_corr_m, paste0("Raw_results/", id_name, "_pdc_corr_means.csv"), row.names = TRUE)
 ```
 
 ```{r Estimate variability networks 1}
@@ -205,45 +201,42 @@ NetSD <- graphicalVAR(dat_sd,
                       lambda_kappa = 0, 
                       verbose = FALSE)
 
-# save graphs
-pdf("Raw_results/PR010_network_sd_PCC.pdf", height = 5, width = 8)
-pcc_sd <- plot(NetSD, "PCC", labels = names.sd, edge.labels = TRUE, layout="spring")
+# Save graphs
+pdf(paste0("Raw_results/", id_name, "_network_sd_PCC.pdf"), height = 5, width = 8)
+pcc_sd <- plot(NetSD, "PCC", labels = names.sd, edge.labels = TRUE, layout = "spring")
 dev.off()
 
-pdf("Raw_results/PR010_network_sd_PDC.pdf", height = 5, width = 8)
+pdf(paste0("Raw_results/", id_name, "_network_sd_PDC.pdf"), height = 5, width = 8)
 pdc_sd <- plot(NetSD, "PDC", labels = names.sd)
 dev.off()
 
-pdf("Raw_results/PR010_networks_sd.pdf", height = 5, width = 8)
-PR010_centplotsd <- plot(NetSD, labels = names.sd, 
-                         edge.labels = TRUE, 
-                         layout = "spring")
+pdf(paste0("Raw_results/", id_name, "_networks_sd.pdf"), height = 5, width = 8)
+PR010_centplotsd <- plot(NetSD, labels = names.sd, edge.labels = TRUE, layout = "spring")
 dev.off()
 
-# create and save centrality plots
-PR010_centplotsd <- plot(NetSD, labels = names.sd, 
-                         edge.labels = TRUE, 
-                         layout = "spring") %>% 
+# Create and save centrality plots
+PR010_centplotsd <- plot(NetSD, labels = names.sd, edge.labels = TRUE, layout = "spring") %>% 
   centralityPlot() +
   theme(legend.position = "none") +
   facet_grid(rows = vars(measure)) +
-  theme(axis.text=element_text(size=13),
-        strip.text.y = element_text(size=15))
-ggsave(PR010_centplotsd, filename = "Raw_results/PR010_centrality_sd.png")
+  theme(axis.text = element_text(size = 13),
+        strip.text.y = element_text(size = 15))
+ggsave(PR010_centplotsd, filename = paste0("Raw_results/", id_name, "_centrality_sd.png"))
 
-# centrality tables
+# Centrality tables
 centr_sd <- clairecleans::gather_cent(pcc_sd, pdc_sd)
 rm(centr)
-write.csv(centr_sd, "Raw_results/PR010_centr_sd.csv", row.names = FALSE)
+centr_filename <- paste0("Raw_results/", id_name, "_centr_sd.csv")
+write.csv(centr_sd, centr_filename, row.names = FALSE)
 
-# node correlations
+# Node correlations
 pcc_corr_sd <- data.frame(pcc_sd[[1]][[2]][[6]])
-pcc_corr_sd # look at it
-write.csv(pcc_corr_sd, "Raw_results/PR010_pcc_corr_sd.csv", row.names = TRUE)
+pcc_corr_filename <- paste0("Raw_results/", id_name, "_pcc_corr_sd.csv")
+write.csv(pcc_corr_sd, pcc_corr_filename, row.names = TRUE)
 
 pdc_corr_sd <- data.frame(pdc_sd[[1]][[2]][[5]])
-pdc_corr_sd # look at it
-write.csv(pdc_corr_sd, "Raw_results/PR010_pdc_corr_sd.csv", row.names = TRUE)
+pdc_corr_filename <- paste0("Raw_results/", id_name, "_pdc_corr_sd.csv")
+write.csv(pdc_corr_sd, pdc_corr_filename, row.names = TRUE)
 ```
 
 # Imputed data
@@ -276,8 +269,6 @@ dat_sd_2 <- dat_2[,c("ID",
                  names.sd)]
 
 # save these dataframes 
-
-file_path <- "Data/PR010"
 name <- paste0(id_name, "_imputed_means")
 filename <- paste(name, Sys.Date(), filetype, sep = '')
 full_filename <- file.path(file_path, filename)
@@ -386,44 +377,38 @@ NetMean <- graphicalVAR(dat_means_2,
                         verbose = FALSE)
 
 # Save graphs
-pdf("Imputed_results/PR010_network_means_PCC_imputed.pdf", height = 5, width = 8)
+pdf(paste0("Imputed_results/", id_name, "_network_means_PCC_imputed.pdf"), height = 5, width = 8)
 pcc_m <- plot(NetMean, "PCC", labels = names.means, edge.labels = TRUE, layout = "spring")
 dev.off()
 
-pdf("Imputed_results/PR010_network_means_PDC_imputed.pdf", height = 5, width = 8)
+pdf(paste0("Imputed_results/", id_name, "_network_means_PDC_imputed.pdf"), height = 5, width = 8)
 pdc_m <- plot(NetMean, "PDC", labels = names.means)
 dev.off()
 
-pdf("Imputed_results/PR010_networks_means_imputed.pdf", height = 5, width = 8)
-plot(NetMean, 
-     labels = names.means, 
-     edge.labels = TRUE, 
-     layout="spring")
-dev.off
+pdf(paste0("Imputed_results/", id_name, "_networks_means_imputed.pdf"), height = 5, width = 8)
+plot(NetMean, labels = names.means, edge.labels = TRUE, layout = "spring")
+dev.off()
 
-# create and save centrality plots
-PR010_centplotm <- plot(NetMean, 
-                        labels = names.means, 
-                        edge.labels = TRUE, 
-                        layout="spring") %>% 
+# Create and save centrality plots
+PR010_centplotm <- plot(NetMean, labels = names.means, edge.labels = TRUE, layout="spring") %>% 
   centralityPlot() +
   theme(legend.position = "none") +
   facet_grid(rows = vars(measure)) +
   theme(axis.text = element_text(size = 13),
         strip.text.y = element_text(size = 15))
-ggsave(PR010_centplotm, filename = "Imputed_results/PR010_centrality_means_imputed.png")
+ggsave(PR010_centplotm, filename = paste0("Imputed_results/", id_name, "_centrality_means_imputed.png"))
 
-# centrality tables
+# Centrality tables
 centr_m <- clairecleans::gather_cent(pcc_m, pdc_m)
 rm(centr)
-write.csv(centr_m, "Imputed_results/PR010_centr_means_imputed.csv", row.names = FALSE)
+write.csv(centr_m, paste0("Imputed_results/", id_name, "_centr_means_imputed.csv"), row.names = FALSE)
 
-# node correlations. Get edge list and weights
-(pcc_corr_m <- data.frame(pcc_m[[1]][[2]][[6]]))
-write.csv(pcc_corr_m, "Imputed_results/PR010_pcc_corr_means_imputed.csv", row.names = TRUE)
+# Node correlations. Get edge list and weights
+pcc_corr_m <- data.frame(pcc_m[[1]][[2]][[6]])
+write.csv(pcc_corr_m, paste0("Imputed_results/", id_name, "_pcc_corr_means_imputed.csv"), row.names = TRUE)
 
-(pdc_corr_m <- data.frame(pdc_m[[1]][[2]][[5]]))
-write.csv(pdc_corr_m, "Imputed_results/PR010_pdc_corr_means_imputed.csv", row.names = TRUE)
+pdc_corr_m <- data.frame(pdc_m[[1]][[2]][[5]])
+write.csv(pdc_corr_m, paste0("Imputed_results/", id_name, "_pdc_corr_means_imputed.csv"), row.names = TRUE)
 ```
 
 ```{r Estimate variability networks 2}
@@ -443,18 +428,16 @@ NetSD <- graphicalVAR(dat_sd_2,
                       verbose = FALSE)
 
 # save graphs
-pdf("Imputed_results/PR010_network_sd_PCC_imputed.pdf", height = 5, width = 8)
-pcc_sd <- plot(NetSD, "PCC", labels = names.sd, edge.labels = TRUE, layout="spring")
+pdf(paste0("Imputed_results/", id_name, "_network_sd_PCC_imputed.pdf"), height = 5, width = 8)
+pcc_sd <- plot(NetSD, "PCC", labels = names.sd, edge.labels = TRUE, layout = "spring")
 dev.off()
 
-pdf("Imputed_results/PR010_network_sd_PDC_imputed.pdf", height = 5, width = 8)
+pdf(paste0("Imputed_results/", id_name, "_network_sd_PDC_imputed.pdf"), height = 5, width = 8)
 pdc_sd <- plot(NetSD, "PDC", labels = names.sd)
 dev.off()
 
-pdf("Imputed_results/PR010_networks_sd_imputed.pdf", height = 5, width = 8)
-PR010_centplotsd <- plot(NetSD, labels = names.sd, 
-                         edge.labels = TRUE, 
-                         layout = "spring")
+pdf(paste0("Imputed_results/", id_name, "_networks_sd_imputed.pdf"), height = 5, width = 8)
+PR010_centplotsd <- plot(NetSD, labels = names.sd, edge.labels = TRUE, layout = "spring")
 dev.off()
 
 # create and save centrality plots
@@ -466,27 +449,28 @@ PR010_centplotsd <- plot(NetSD, labels = names.sd,
   facet_grid(rows = vars(measure)) +
   theme(axis.text=element_text(size=13),
         strip.text.y = element_text(size=15))
-ggsave(PR010_centplotsd, filename = "Imputed_results/PR010_centrality_sd_imputed.png")
+ggsave(PR010_centplotsd, filename = paste0("Imputed_results/", id_name, "_centrality_sd_imputed.png"))
 
 # centrality tables
 centr_sd <- clairecleans::gather_cent(pcc_sd, pdc_sd)
 rm(centr)
-write.csv(centr_sd, "Imputed_results/PR010_centr_sd_imputed.csv", row.names = FALSE)
+centr_filename <- paste0("Imputed_results/", id_name, "_centr_sd_imputed.csv")
+write.csv(centr_sd, centr_filename, row.names = FALSE)
 
 # node correlations
 pcc_corr_sd <- data.frame(pcc_sd[[1]][[2]][[6]])
-pcc_corr_sd # look at it
-write.csv(pcc_corr_sd, "Imputed_results/PR010_pcc_corr_sd_imputed.csv", row.names = TRUE)
+pcc_corr_filename <- paste0("Imputed_results/", id_name, "_pcc_corr_sd_imputed.csv")
+write.csv(pcc_corr_sd, pcc_corr_filename, row.names = TRUE)
 
 pdc_corr_sd <- data.frame(pdc_sd[[1]][[2]][[5]])
-pdc_corr_sd # look at it
-write.csv(pdc_corr_sd, "Imputed_results/PR010_pdc_corr_sd_imputed.csv", row.names = TRUE)
+pdc_corr_filename <- paste0("Imputed_results/", id_name, "_pdc_corr_sd_imputed.csv")
+write.csv(pdc_corr_sd, pdc_corr_filename, row.names = TRUE)
 ```
 
 ```{r renew log}
 # PR003: not detrended for means or SDs; non-imputed
 # PR007: not detrended for means or SDs; imputed and non-imputed
 # PR008: not-imputed detrended for means (Residual covariances not postive definite), not detrended for SDs; imputed (warning - 'possible convergence problem: 'optim' gave code = 52 and message ‘ERROR: ABNORMAL_TERMINATION_IN_LNSRCH') not detrended for means or SDs
-# # PR010: not detrended for neans or SDs; imputed and non-imputed
+# PR010: not detrended for means or SDs; imputed and non-imputed
 ```
 

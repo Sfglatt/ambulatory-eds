@@ -12,9 +12,11 @@ output: html_notebook
 # clear work space
 rm(list=ls())
 
-# set the participant ID name; here I'm analyzing PR003
-id_name = "PR007" 
-# id_name=gsub(".*/", "", getwd()) 
+# set the participant ID name and file path for all forthcoming files 
+id_name = "PR011" 
+
+file_path <- file.path("Data", id_name)
+dir.create(file_path)
 
 if (!require("cowplot")) {install.packages("cowplot"); require("cowplot")} 
 if (!require("devtools")) {install.packages("devtools"); require("devtools")} 
@@ -224,7 +226,7 @@ dat <- dat %>%
   dplyr::mutate(sleep = 100 - sleep)
 
 # Save data in CSV form
-file_path <- "Data/PR007"
+filetype <- ".csv"
 name <- paste0(id_name, "_rawwithtime")
 filename <- paste(name, Sys.Date(), filetype, sep = '')
 full_filename <- file.path(file_path, filename)
@@ -236,7 +238,7 @@ write.csv(dat, file = full_filename, row.names = FALSE)
 # cc  Mansueto et al. (2022). Investigating the Feasibility of Idiographic Networks. Psychological Methods;  https://psyarxiv.com/hgcz6/ 10.1037/met0000466
 
 # import dataset (if already ran the above processing chunks): 
-# PR003_dat <- read.csv("PR007_rawwithtime2024-05-26.csv")
+# PR003_dat <- read.csv("PR008_rawwithtime2024-05-26.csv")
 
 dat_2 <- dat
 
@@ -253,8 +255,7 @@ sum(is.na(dat_2[-c(1:9)]))
 dat_2[rowSums(is.na(dat_2[-c(1:9)])) > 0, ] # dayvar = 1, beepvar =1
 colSums(is.na(dat_2))
 
-#### save imputed dat_2a ####
-file_path <- "Data/PR007"
+#### save imputed data ####
 name <- paste0(id_name, "_imputed_rawwithtime")
 filename <- paste(name, Sys.Date(), filetype, sep = '')
 full_filename <- file.path(file_path, filename)
