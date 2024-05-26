@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","desirethin","Strength",1.4573000430746
+"graph 1","PCC","restrict","Strength",0.689428604429872
+"graph 1","PCC","sleep","Strength",-1.42904490363923
+"graph 1","PCC","feelfat","Strength",-0.210989848027728
+"graph 1","PCC","food_intrus","Strength",0.0515377673599481
+"graph 1","PCC","bodydiss","Strength",-0.55823166319746
+"graph 1","PDC","desirethin","InStrength",1.9409017556217
+"graph 1","PDC","restrict","InStrength",0.119681448024957
+"graph 1","PDC","sleep","InStrength",-0.35759535776093
+"graph 1","PDC","feelfat","InStrength",-0.784795093694501
+"graph 1","PDC","food_intrus","InStrength",-0.29590939445205
+"graph 1","PDC","bodydiss","InStrength",-0.622283357739176
+"graph 1","PDC","desirethin","OutStrength",-0.216658997600921
+"graph 1","PDC","restrict","OutStrength",-0.581788116142999
+"graph 1","PDC","sleep","OutStrength",-1.53280700520013
+"graph 1","PDC","feelfat","OutStrength",0.642712216823904
+"graph 1","PDC","food_intrus","OutStrength",1.30601670373155
+"graph 1","PDC","bodydiss","OutStrength",0.382525198388593

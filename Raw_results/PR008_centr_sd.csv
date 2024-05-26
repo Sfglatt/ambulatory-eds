@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","physsens_eat","Strength",0.63237622714026
+"graph 1","PCC","smallportion","Strength",1.06191226526737
+"graph 1","PCC","impulse","Strength",-1.08850758845323
+"graph 1","PCC","avoid_food","Strength",-1.32726396653741
+"graph 1","PCC","urge_restrict","Strength",-0.00374120934006695
+"graph 1","PCC","binge","Strength",0.725224271923073
+"graph 1","PDC","physsens_eat","InStrength",1.615081452678
+"graph 1","PDC","smallportion","InStrength",-0.82069055662938
+"graph 1","PDC","impulse","InStrength",0.642823245660977
+"graph 1","PDC","avoid_food","InStrength",-0.961792741019151
+"graph 1","PDC","urge_restrict","InStrength",0.127459914243644
+"graph 1","PDC","binge","InStrength",-0.602881314934086
+"graph 1","PDC","physsens_eat","OutStrength",-0.27317009694476
+"graph 1","PDC","smallportion","OutStrength",1.52574712696453
+"graph 1","PDC","impulse","OutStrength",-0.22879704905944
+"graph 1","PDC","avoid_food","OutStrength",0.760353718549194
+"graph 1","PDC","urge_restrict","OutStrength",-1.32532278269857
+"graph 1","PDC","binge","OutStrength",-0.458810916810958
