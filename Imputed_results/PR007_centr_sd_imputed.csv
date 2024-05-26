@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","physsens_eat","Strength",-1.19889141603422
+"graph 1","PCC","physsens","Strength",1.53221668143247
+"graph 1","PCC","worryoverwhelm","Strength",-0.741743110329765
+"graph 1","PCC","guilty","Strength",0.228852149482316
+"graph 1","PCC","bodycheck","Strength",0.635810935905095
+"graph 1","PCC","heartrace","Strength",-0.456245240455898
+"graph 1","PDC","physsens_eat","InStrength",-1.07558479922606
+"graph 1","PDC","physsens","InStrength",1.09747742176407
+"graph 1","PDC","worryoverwhelm","InStrength",-1.29128384620108
+"graph 1","PDC","guilty","InStrength",0.122825720577473
+"graph 1","PDC","bodycheck","InStrength",0.959840827945116
+"graph 1","PDC","heartrace","InStrength",0.186724675140484
+"graph 1","PDC","physsens_eat","OutStrength",1.88378856722841
+"graph 1","PDC","physsens","OutStrength",0.167134575302978
+"graph 1","PDC","worryoverwhelm","OutStrength",-0.463877884438628
+"graph 1","PDC","guilty","OutStrength",-0.0344420016191325
+"graph 1","PDC","bodycheck","OutStrength",-0.805876013816143
+"graph 1","PDC","heartrace","OutStrength",-0.746727242657483

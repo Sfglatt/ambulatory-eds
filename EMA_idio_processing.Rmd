@@ -13,12 +13,12 @@ output: html_notebook
 rm(list=ls())
 
 # set the participant ID name; here I'm analyzing PR003
-id_name = "PR003" 
+id_name = "PR007" 
 # id_name=gsub(".*/", "", getwd()) 
 
 if (!require("cowplot")) {install.packages("cowplot"); require("cowplot")} 
 if (!require("devtools")) {install.packages("devtools"); require("devtools")} 
-# devtools::install_github("cecusack/clairecleans") # if you haven't installed this package, uncomment
+# devtools::install_github("cecusack/clairecleans") 
 if (!require("devtools")) {install.packages("devtools"); require("devtools")} 
 if (!require("ggpubr")) {install.packages("ggpubr"); require("ggpubr")} #
 if (!require("graphicalVAR")) {install.packages("graphicalVAR"); require("graphicalVAR")} 
@@ -33,10 +33,7 @@ if (!require("qgraph")) {install.packages("qgraph"); require("qgraph")}
 ```
 
 ```{r packages}
-# Directory to save results
-dir.create(paste0(getwd(), "/results")) 
 
-res_dir <- paste0(getwd(), "/results")
 # function to lag dat by 1
 # lagpad <- function(x, k) {
 #      c(rep(NA, k), x)[1 : length(x)] 
@@ -87,7 +84,7 @@ if (any(names(eve) == "Duration..seconds..from.scheduled.to.completion.time")) {
 # setdiff(names(eve), names(morn))
 
 # Read in a file with morning EMA
-mornname <- scan("mornname.txt", what = "character", sep = "\n")
+Morn_name <- scan("Morn_name.txt", what = "character", sep = "\n")
 
 if (dim(morn)[2] == 72) {
   colnames(morn) <- Morn_name[-70]
@@ -100,7 +97,7 @@ if (dim(morn)[2] == 72) {
 colnames(aft) <- colnames(morn)[-c(3:4)]
 
 # Read in a file with evening EMA
-evename <- scan("evename.txt", what = "character", sep = "\n")
+Eve_name <- scan("Eve_name.txt", what = "character", sep = "\n")
 if (dim(morn)[2] == 72) {
   colnames(eve)[1:70] <- Morn_name[-c(3:4, 70)]
   colnames(eve)[71:ncol(eve)] <- Eve_name
@@ -222,17 +219,16 @@ dat <- dat %>% relocate(cumsumT, .after = tdif)
 dat[, c(1:10)]
 dat <- dat[-c(which(colnames(dat) == "date"), which(colnames(dat) == "time"))]
 
-# Save data in CSV form
-name <- paste0(id_name, '_rawwithtime')
-filetype <- '.csv'
-filename <- paste(name, Sys.Date(), filetype, sep = '')
-write.csv(dat, file = filename, row.names = FALSE)
-```
+# Deal with sleep!!
+dat <- dat %>% 
+  dplyr::mutate(sleep = 100 - sleep)
 
-```{r Impute data directory}
-# Directory to save imputed results
-dir.create(paste0(getwd(), "/Imputed_results"))
-res_dir <- paste0(getwd(), "/Imputed_results")
+# Save data in CSV form
+file_path <- "Data/PR007"
+name <- paste0(id_name, "_rawwithtime")
+filename <- paste(name, Sys.Date(), filetype, sep = '')
+full_filename <- file.path(file_path, filename)
+write.csv(dat, file = full_filename, row.names = FALSE)
 ```
 
 ```{r Impute data}
@@ -240,33 +236,27 @@ res_dir <- paste0(getwd(), "/Imputed_results")
 # cc  Mansueto et al. (2022). Investigating the Feasibility of Idiographic Networks. Psychological Methods;  https://psyarxiv.com/hgcz6/ 10.1037/met0000466
 
 # import dataset (if already ran the above processing chunks): 
-PR003_dat <- read.csv("PR003_rawwithtime2022-07-03.csv")
+# PR003_dat <- read.csv("PR007_rawwithtime2024-05-26.csv")
+
+dat_2 <- dat
 
 # impute
-imp_kalman <- na_kalman(PR003_dat[10:ncol(PR003_dat # dat
-                                          )], model = "StructTS", smooth = TRUE)
-imp_kalman <- cbind(PR003_dat[1:9],imp_kalman) 
+imp_kalman <- na_kalman(dat_2[10:ncol(dat_2)], model = "StructTS", smooth = TRUE)
+imp_kalman <- cbind(dat_2[1:9],imp_kalman) 
 
-PR003_dat <- imp_kalman 
+dat_2 <- imp_kalman 
 
 # Check missingness
-sum(is.na(PR003_dat[-c(1:9)]))/prod(dim(PR003_dat[-c(1:9)])) # 0 is good
+sum(is.na(dat_2[-c(1:9)]))/prod(dim(dat_2[-c(1:9)])) # 0 is good
 # if it isn't 0, find out where the missing values are
-sum(is.na(PR003_dat[-c(1:9)])) 
-PR003_dat[rowSums(is.na(PR003_dat[-c(1:9)])) > 0, ] # dayvar = 1, beepvar =1
-colSums(is.na(PR003_dat))
+sum(is.na(dat_2[-c(1:9)])) 
+dat_2[rowSums(is.na(dat_2[-c(1:9)])) > 0, ] # dayvar = 1, beepvar =1
+colSums(is.na(dat_2))
 
-#### save imputed data ####
-write.csv(PR003_dat, "PR003_IMPUTED.csv", row.names = FALSE)
+#### save imputed dat_2a ####
+file_path <- "Data/PR007"
+name <- paste0(id_name, "_imputed_rawwithtime")
+filename <- paste(name, Sys.Date(), filetype, sep = '')
+full_filename <- file.path(file_path, filename)
+write.csv(dat_2, file = full_filename, row.names = FALSE)
 ```
-
-```{r Mutate sleep!}
-## import rawith time
-dat <- read.csv("C:/Users/sofel/Box/PR Data/PR003/PR003_rawwithtime2022-07-03.csv")
-head(dat)
-
-# reverse score sleep (0-100 scale)
-dat <- dat %>% 
-  dplyr::mutate(sleep = 100 - sleep)
-```
-

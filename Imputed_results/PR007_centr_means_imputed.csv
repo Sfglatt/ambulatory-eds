@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","mistakes","Strength",-0.250757431383284
+"graph 1","PCC","reject","Strength",0.529428847566324
+"graph 1","PCC","bodydiss","Strength",-1.17797745912271
+"graph 1","PCC","wtshdiss","Strength",0.433454971367959
+"graph 1","PCC","overvalwtsh","Strength",-0.986255149987094
+"graph 1","PCC","fowg","Strength",1.45210622155881
+"graph 1","PDC","mistakes","InStrength",-1.58979489037566
+"graph 1","PDC","reject","InStrength",0.817189276685935
+"graph 1","PDC","bodydiss","InStrength",1.24423253612681
+"graph 1","PDC","wtshdiss","InStrength",-0.33455727877666
+"graph 1","PDC","overvalwtsh","InStrength",0.191577338842202
+"graph 1","PDC","fowg","InStrength",-0.328646982502624
+"graph 1","PDC","mistakes","OutStrength",1.87549822059508
+"graph 1","PDC","reject","OutStrength",-0.508130544786771
+"graph 1","PDC","bodydiss","OutStrength",-0.586498989952578
+"graph 1","PDC","wtshdiss","OutStrength",-0.913530961485124
+"graph 1","PDC","overvalwtsh","OutStrength",-0.0696656480011417
+"graph 1","PDC","fowg","OutStrength",0.202327923630536

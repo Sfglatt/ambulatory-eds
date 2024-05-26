@@ -5,8 +5,14 @@ output: html_notebook
 
 # Idiographic networks 
 
-```{r Item selection}
+```{r Data}
+# "dat" for raw data; "1" chunks
+# "dat_2" for imputed data; "2" chunks
+# from Idio processing script
+```
 
+# Non-imputed data
+```{r Item selection 1}
 # Select the top 6 features with the highests means and variability, excluding first misc columns (e.g., id, time)
 clairecleans::item_sel(dat[which(colnames(dat) == "sleep"):ncol(dat)], 6) 
 
@@ -44,8 +50,7 @@ filename = paste(name, Sys.Date(), filetype, sep = '')
 write.csv(dat_sd, file = filename, row.names = FALSE)
 ```
 
-```{r Stationarity and detrend}
-
+```{r Stationarity and detrend 1}
 ##### means #####
 
 vars <- names(dat_means)[-c(1:9)] 
@@ -74,7 +79,7 @@ kpss_plot = function(x, y, df) {
 # sometimes KPSS test can be conservative. 
 # The assumption is no unit root (not stationary), < .05 indicates stationarity
 
-apply(dat_means[10:ncol(dat_means)], 2, adf.test) # doesn't like NAs
+# apply(dat_means[10:ncol(dat_means)], 2, adf.test) # doesn't like NAs
 
 #### sd ####
 vars <- names(dat_sd)[-c(1:9)] 
@@ -124,7 +129,7 @@ for(i in 1:ncol(dedatsd)) {
 dedatsd <- bind_cols(dat[,7:8], dedatsd)
 ```
 
-```{r Estimate means networks}
+```{r Estimate means networks 1}
 # use dat_means for not detrended and dedatm for detrended
 
 dayvar <- "dayvar"
@@ -141,16 +146,23 @@ NetMean <- graphicalVAR(dat_means,
                         verbose = FALSE)
 
 # Save graphs
-pdf("PR003_network_means_PCC.pdf", height = 5, width = 8)
+pdf("Raw_results/PR007_network_means_PCC.pdf", height = 5, width = 8)
 pcc_m <- plot(NetMean, "PCC", labels = names.means, edge.labels = TRUE, layout = "spring")
 dev.off()
 
-pdf("PR003_network_means_PDC.pdf", height = 5, width = 8)
+pdf("Raw_results/PR007_network_means_PDC.pdf", height = 5, width = 8)
 pdc_m <- plot(NetMean, "PDC", labels = names.means)
 dev.off()
 
+pdf("Raw_results/PR007_networks_means.pdf", height = 5, width = 8)
+PR007_centplotm <- plot(NetMean, 
+                        labels = names.means, 
+                        edge.labels = TRUE, 
+                        layout="spring")
+dev.off()
+
 # create and save centrality plots
-PR003_centplotm <- plot(NetMean, 
+PR007_centplotm <- plot(NetMean, 
                         labels = names.means, 
                         edge.labels = TRUE, 
                         layout="spring") %>% 
@@ -159,22 +171,22 @@ PR003_centplotm <- plot(NetMean,
   facet_grid(rows = vars(measure)) +
   theme(axis.text = element_text(size = 13),
         strip.text.y = element_text(size = 15))
-ggsave(PR003_centplotm, filename = "PR003_centrality_m.png")
+ggsave(PR007_centplotm, filename = "Raw_results/PR007_centrality_means.png")
 
 # centrality tables
-# centr_m <- gather_cent(pcc_m, pdc_m)
-# rm(centr)
-write.csv(centr_m, "PR003_centr_means.csv", row.names = FALSE)
+centr_m <- clairecleans::gather_cent(pcc_m, pdc_m)
+rm(centr)
+write.csv(centr_m, "Raw_results/PR007_centr_means.csv", row.names = FALSE)
 
 # node correlations. Get edge list and weights
 (pcc_corr_m <- data.frame(pcc_m[[1]][[2]][[6]]))
-write.csv(pcc_corr_m, "PR003_pcc_corr_means.csv", row.names = TRUE)
+write.csv(pcc_corr_m, "Raw_results/PR007_pcc_corr_means.csv", row.names = TRUE)
 
 (pdc_corr_m <- data.frame(pdc_m[[1]][[2]][[5]]))
-write.csv(pdc_corr_m, "PR003_pdc_corr_means.csv", row.names = TRUE)
+write.csv(pdc_corr_m, "Raw_results/PR007_pdc_corr_means.csv", row.names = TRUE)
 ```
 
-```{r Estimate variability networks}
+```{r Estimate variability networks 1}
 dayvar <- "dayvar"
 beepvar <- "beepvar"
 
@@ -191,16 +203,22 @@ NetSD <- graphicalVAR(dat_sd,
                       verbose = FALSE)
 
 # save graphs
-pdf("PR003_network_sd_PCC.pdf", height = 5, width = 8)
+pdf("Raw_results/PR007_network_sd_PCC.pdf", height = 5, width = 8)
 pcc_sd <- plot(NetSD, "PCC", labels = names.sd, edge.labels = TRUE, layout="spring")
 dev.off()
 
-pdf("PR003_network_sd_PDC.pdf", height = 5, width = 8)
+pdf("Raw_results/PR007_network_sd_PDC.pdf", height = 5, width = 8)
 pdc_sd <- plot(NetSD, "PDC", labels = names.sd)
 dev.off()
 
+pdf("Raw_results/PR007_networks_sd.pdf", height = 5, width = 8)
+PR007_centplotsd <- plot(NetSD, labels = names.sd, 
+                         edge.labels = TRUE, 
+                         layout = "spring")
+dev.off()
+
 # create and save centrality plots
-PR003_centplotsd <- plot(NetSD, labels = names.sd, 
+PR007_centplotsd <- plot(NetSD, labels = names.sd, 
                          edge.labels = TRUE, 
                          layout = "spring") %>% 
   centralityPlot() +
@@ -208,20 +226,258 @@ PR003_centplotsd <- plot(NetSD, labels = names.sd,
   facet_grid(rows = vars(measure)) +
   theme(axis.text=element_text(size=13),
         strip.text.y = element_text(size=15))
-ggsave(PR003_centplotsd, filename = "PR003_centrality_sd.png")
+ggsave(PR007_centplotsd, filename = "Raw_results/PR007_centrality_sd.png")
 
 # centrality tables
-centr_sd <- gather_cent(pcc_sd, pdc_sd)
+centr_sd <- clairecleans::gather_cent(pcc_sd, pdc_sd)
 rm(centr)
-write.csv(centr_sd, "PR003_centr_sd.csv", row.names = FALSE)
+write.csv(centr_sd, "Raw_results/PR007_centr_sd.csv", row.names = FALSE)
 
 # node correlations
 pcc_corr_sd <- data.frame(pcc_sd[[1]][[2]][[6]])
 pcc_corr_sd # look at it
-write.csv(pcc_corr_sd, "PR003_pcc_corr_sd.csv", row.names = TRUE)
+write.csv(pcc_corr_sd, "Raw_results/PR007_pcc_corr_sd.csv", row.names = TRUE)
 
 pdc_corr_sd <- data.frame(pdc_sd[[1]][[2]][[5]])
 pdc_corr_sd # look at it
-write.csv(pdc_corr_sd, "PR003_pdc_corr_sd.csv", row.names = TRUE)
+write.csv(pdc_corr_sd, "Raw_results/PR007_pdc_corr_sd.csv", row.names = TRUE)
+```
+
+# Imputed data
+```{r Item selection 2}
+# Select the top 6 features with the highests means and variability, excluding first misc columns (e.g., id, time)
+clairecleans::item_sel(dat_2[which(colnames(dat_2) == "sleep"):ncol(dat_2)], 6) 
+
+# subset your data based on items selected: 
+# means data
+dat_means_2 <- dat_2[,c("ID", 
+                    "ethica_time",
+                    "ethica_time_utc", 
+                    "lag", 
+                    "tdif",
+                    "cumsumT", 
+                    "dayvar", 
+                    "beepvar", 
+                    "beepconsec", 
+                    names.means)]
+# variability data
+dat_sd_2 <- dat_2[,c("ID", 
+                 "ethica_time", 
+                 "ethica_time_utc", 
+                 "lag", 
+                 "tdif", 
+                 "cumsumT", 
+                 "dayvar", 
+                 "beepvar", 
+                 "beepconsec", 
+                 names.sd)]
+
+# save these dataframes 
+name = paste0(id_name,"_imputed_means")
+filename = paste(name, Sys.Date(), filetype, sep = '')
+write.csv(dat_means_2, file = filename, row.names = FALSE)
+
+name = paste0(id_name,"_imputed_sd")
+filename = paste(name, Sys.Date(), filetype, sep = '')
+write.csv(dat_sd_2, file = filename, row.names = FALSE)
+```
+
+```{r Stationarity and detrend 2}
+
+##### means #####
+
+vars <- names(dat_means_2)[-c(1:9)] 
+(kpss_means <- clairecleans::kpss_df(dat_means_2, vars))
+
+# visualize
+x <- "beep" 
+y <- colnames(dat_means_2)[-c(1:9)] 
+design.matrix <- tidyr::expand_grid(x, y)
+
+kpss_plot = function(x, y, df) {
+    df$beep <- rep(1:nrow(df))
+    ggplot(df, aes(x = .data[[x]], y = .data[[y]]) ) +
+    geom_point() +
+    geom_smooth(method = "lm", se = TRUE) +
+    theme_bw() +
+    coord_cartesian(ylim = c(0, 100)) +
+    geom_text(aes(x = 27.5, y = 95, label=paste("KPSS Trend =",round(kpss.test(.data[[y]], null = "Trend")$statistic, digits = 3),", p = ",round(kpss.test(.data[[y]], null = "Trend")$p.value, digits = 3))), colour = "red1", size = 3, fontface = "bold", check_overlap = TRUE) + 
+      theme(legend.title = element_blank())
+}
+
+(plot_grob <- plot_grid(arrangeGrob(grobs = pmap(design.matrix, ~kpss_plot(x = .x, y = .y, df= dat_means_2)))))
+
+##### dickey-fuller #####
+# resource: https://www.statology.org/dickey-fuller-test-in-r/
+# sometimes KPSS test can be conservative. 
+# The assumption is no unit root (not stationary), < .05 indicates stationarity
+
+apply(dat_means_2[10:ncol(dat_means_2)], 2, adf.test) # doesn't like NAs
+
+#### sd ####
+vars <- names(dat_sd_2)[-c(1:9)] 
+(kpss_sd <- clairecleans::kpss_df(dat_sd_2, vars))
+
+# visualize
+y <- colnames(dat_sd_2)[-c(1:9)] 
+design.matrix <- tidyr::expand_grid(x, y)
+
+(plot_grob <- plot_grid(arrangeGrob(grobs = pmap(design.matrix, ~kpss_plot(x = .x, y = .y, df = dat_sd_2)))))
+# plots out of line
+
+##### dickey-fuller #####
+# apply(dat_sd_2[10:ncol(dat_sd_2)], 2, adf.test)
+
+#### detrend ####
+
+# This procedure is based off of the work of Aaron Fisher et al., (2017): Exploring the idiographic dynamics of mood and anxiety via network analysis https://osf.io/m63ks/ 
+## Instead of applying a cubic spline, the night lag was dropped.
+
+#### means ####
+# trim
+dat_m <- dat_means_2[,10:ncol(dat_means_2)]
+
+dedatm <- data.frame(matrix(ncol = dim(dat_m)[2], nrow = dim(dat_m[1]))) 
+# creating empty container to place detrended data
+
+colnames(dedatm) <- colnames(dat_m) 
+
+for(i in 1:ncol(dedatm)) {
+  dedatm[,i] <- resid(lm(scale(dat_m[,i])~dat$cumsumT, na.action = na.exclude)) 
+  }
+
+dedatm <- bind_cols(dat[,7:8], dedatm)
+
+#### SD ####
+
+dat_sd_2 <- dat_sd_2[,10:ncol(dat_sd_2)]
+dedatsd <- data.frame(matrix(ncol = dim(dat_sd_2)[2], nrow = dim(dat_sd_2[1]))) # empty mat to fill with resid
+colnames(dedatsd) <- colnames(dat_sd_2) # fix colnames
+
+# detrend
+for(i in 1:ncol(dedatsd)) {
+  dedatsd[,i] <- resid(lm(scale(dat_sd_2[,i])~dat$cumsumT, na.action = na.exclude))
+}
+
+dedatsd <- bind_cols(dat[,7:8], dedatsd)
+```
+
+```{r Estimate means networks 2}
+# use dat_means for not detrended and dedatm for detrended
+
+dayvar <- "dayvar"
+beepvar <- "beepvar"
+
+# Estimate network
+NetMean <- graphicalVAR(dat_means, 
+                        vars = names.means, 
+                        dayvar = dayvar, 
+                        beepvar = beepvar, 
+                        gamma = 0, 
+                        lambda_beta = 0, 
+                        lambda_kappa = 0, 
+                        verbose = FALSE)
+
+# Save graphs
+pdf("Imputed_results/PR007_network_means_PCC_imputed.pdf", height = 5, width = 8)
+pcc_m <- plot(NetMean, "PCC", labels = names.means, edge.labels = TRUE, layout = "spring")
+dev.off()
+
+pdf("Imputed_results/PR007_network_means_PDC_imputed.pdf", height = 5, width = 8)
+pdc_m <- plot(NetMean, "PDC", labels = names.means)
+dev.off()
+
+pdf("Imputed_results/PR007_networks_means_imputed.pdf", height = 5, width = 8)
+plot(NetMean, 
+                        labels = names.means, 
+                        edge.labels = TRUE, 
+                        layout="spring")
+dev.off
+
+# create and save centrality plots
+PR007_centplotm <- plot(NetMean, 
+                        labels = names.means, 
+                        edge.labels = TRUE, 
+                        layout="spring") %>% 
+  centralityPlot() +
+  theme(legend.position = "none") +
+  facet_grid(rows = vars(measure)) +
+  theme(axis.text = element_text(size = 13),
+        strip.text.y = element_text(size = 15))
+ggsave(PR007_centplotm, filename = "Imputed_results/PR007_centrality_means_imputed.png")
+
+# centrality tables
+centr_m <- clairecleans::gather_cent(pcc_m, pdc_m)
+rm(centr)
+write.csv(centr_m, "Imputed_results/PR007_centr_means_imputed.csv", row.names = FALSE)
+
+# node correlations. Get edge list and weights
+(pcc_corr_m <- data.frame(pcc_m[[1]][[2]][[6]]))
+write.csv(pcc_corr_m, "Imputed_results/PR007_pcc_corr_means_imputed.csv", row.names = TRUE)
+
+(pdc_corr_m <- data.frame(pdc_m[[1]][[2]][[5]]))
+write.csv(pdc_corr_m, "Imputed_results/PR007_pdc_corr_means_imputed.csv", row.names = TRUE)
+```
+
+```{r Estimate variability networks 2}
+dayvar <- "dayvar"
+beepvar <- "beepvar"
+
+# use dat_sd for not detrended and dedatsd for detrended
+
+# estimates network
+NetSD <- graphicalVAR(dat_sd, 
+                      vars = names.sd, 
+                      dayvar = dayvar, 
+                      beepvar = beepvar, 
+                      gamma = 0, 
+                      lambda_beta = 0, 
+                      lambda_kappa = 0, 
+                      verbose = FALSE)
+
+# save graphs
+pdf("Imputed_results/PR007_network_sd_PCC_imputed.pdf", height = 5, width = 8)
+pcc_sd <- plot(NetSD, "PCC", labels = names.sd, edge.labels = TRUE, layout="spring")
+dev.off()
+
+pdf("Imputed_results/PR007_network_sd_PDC_imputed.pdf", height = 5, width = 8)
+pdc_sd <- plot(NetSD, "PDC", labels = names.sd)
+dev.off()
+
+pdf("Imputed_results/PR007_networks_sd_imputed.pdf", height = 5, width = 8)
+PR007_centplotsd <- plot(NetSD, labels = names.sd, 
+                         edge.labels = TRUE, 
+                         layout = "spring")
+dev.off()
+
+# create and save centrality plots
+PR007_centplotsd <- plot(NetSD, labels = names.sd, 
+                         edge.labels = TRUE, 
+                         layout = "spring") %>% 
+  centralityPlot() +
+  theme(legend.position = "none") +
+  facet_grid(rows = vars(measure)) +
+  theme(axis.text=element_text(size=13),
+        strip.text.y = element_text(size=15))
+ggsave(PR007_centplotsd, filename = "Imputed_results/PR007_centrality_sd_imputed.png")
+
+# centrality tables
+centr_sd <- clairecleans::gather_cent(pcc_sd, pdc_sd)
+rm(centr)
+write.csv(centr_sd, "Imputed_results/PR007_centr_sd_imputed.csv", row.names = FALSE)
+
+# node correlations
+pcc_corr_sd <- data.frame(pcc_sd[[1]][[2]][[6]])
+pcc_corr_sd # look at it
+write.csv(pcc_corr_sd, "Imputed_results/PR007_pcc_corr_sd_imputed.csv", row.names = TRUE)
+
+pdc_corr_sd <- data.frame(pdc_sd[[1]][[2]][[5]])
+pdc_corr_sd # look at it
+write.csv(pdc_corr_sd, "Imputed_results/PR007_pdc_corr_sd_imputed.csv", row.names = TRUE)
+```
+
+```{r renew log}
+# PR003: not detrended for means or SDs; non-imputed
+# PR007: not detrended for means or SDs; imputed and non-imputed
 ```
 
