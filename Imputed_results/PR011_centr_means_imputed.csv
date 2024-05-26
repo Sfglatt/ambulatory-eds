@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","smallportion","Strength",-0.361904599798536
+"graph 1","PCC","foodrules","Strength",-0.987946318439389
+"graph 1","PCC","restrict","Strength",-0.746423304220887
+"graph 1","PCC","exercise","Strength",-0.356658998420785
+"graph 1","PCC","bodydiss","Strength",1.54284695847109
+"graph 1","PCC","feelfat","Strength",0.910086262408513
+"graph 1","PDC","smallportion","InStrength",-0.896648861853504
+"graph 1","PDC","foodrules","InStrength",-0.887682740554553
+"graph 1","PDC","restrict","InStrength",-0.612837256115905
+"graph 1","PDC","exercise","InStrength",1.26326491196236
+"graph 1","PDC","bodydiss","InStrength",1.19693742960715
+"graph 1","PDC","feelfat","InStrength",-0.0630334830455502
+"graph 1","PDC","smallportion","OutStrength",-0.975955735011496
+"graph 1","PDC","foodrules","OutStrength",0.559209546386607
+"graph 1","PDC","restrict","OutStrength",-0.980010538958524
+"graph 1","PDC","exercise","OutStrength",1.11916426640676
+"graph 1","PDC","bodydiss","OutStrength",-0.722399736542744
+"graph 1","PDC","feelfat","OutStrength",0.999992197719398

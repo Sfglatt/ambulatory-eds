@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","eat_public","Strength",0.42252876323932
+"graph 1","PCC","sens_body","Strength",-0.437200062836722
+"graph 1","PCC","hunger_anx","Strength",1.35602998473757
+"graph 1","PCC","urge_restrict","Strength",0.378680411223924
+"graph 1","PCC","food_intrus","Strength",-0.0955451766598717
+"graph 1","PCC","sleep","Strength",-1.62449391970422
+"graph 1","PDC","eat_public","InStrength",-0.734581043724808
+"graph 1","PDC","sens_body","InStrength",-0.889431600329355
+"graph 1","PDC","hunger_anx","InStrength",1.0662958385629
+"graph 1","PDC","urge_restrict","InStrength",1.45784929966852
+"graph 1","PDC","food_intrus","InStrength",-0.419476468417682
+"graph 1","PDC","sleep","InStrength",-0.480656025759581
+"graph 1","PDC","eat_public","OutStrength",-0.0237914444046059
+"graph 1","PDC","sens_body","OutStrength",0.381750435702945
+"graph 1","PDC","hunger_anx","OutStrength",0.101033395072527
+"graph 1","PDC","urge_restrict","OutStrength",1.21354102841914
+"graph 1","PDC","food_intrus","OutStrength",0.156740590071309
+"graph 1","PDC","sleep","OutStrength",-1.82927400486132
