@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","urge_restrict","Strength",0.585433310717579
+"graph 1","PCC","physsens_eat","Strength",-1.38884074199103
+"graph 1","PCC","exercise","Strength",-0.0536582477653751
+"graph 1","PCC","physsens","Strength",0.757074894635812
+"graph 1","PCC","sens_body","Strength",1.08617794126422
+"graph 1","PCC","highstand","Strength",-0.986187156861214
+"graph 1","PDC","urge_restrict","InStrength",-0.284636658864633
+"graph 1","PDC","physsens_eat","InStrength",-0.86658514868865
+"graph 1","PDC","exercise","InStrength",0.938948195709998
+"graph 1","PDC","physsens","InStrength",0.726989549634064
+"graph 1","PDC","sens_body","InStrength",0.888375068223321
+"graph 1","PDC","highstand","InStrength",-1.4030910060141
+"graph 1","PDC","urge_restrict","OutStrength",0.308885330913966
+"graph 1","PDC","physsens_eat","OutStrength",-1.41214087424028
+"graph 1","PDC","exercise","OutStrength",0.726705346480867
+"graph 1","PDC","physsens","OutStrength",-0.0635122274617632
+"graph 1","PDC","sens_body","OutStrength",-0.848024514707473
+"graph 1","PDC","highstand","OutStrength",1.28808693901468
