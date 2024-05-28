@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","hunger_anx","Strength",0.657972580115506
+"graph 1","PCC","avoid_emo","Strength",0.0162184606165542
+"graph 1","PCC","wtshdiss","Strength",0.990767768196184
+"graph 1","PCC","bodydiss","Strength",-0.420727012853252
+"graph 1","PCC","highstand","Strength",0.525516594167329
+"graph 1","PCC","eat_anx","Strength",-1.76974839024232
+"graph 1","PDC","hunger_anx","InStrength",-0.48300904395169
+"graph 1","PDC","avoid_emo","InStrength",-0.101332611094454
+"graph 1","PDC","wtshdiss","InStrength",-0.737297539907835
+"graph 1","PDC","bodydiss","InStrength",1.98716865356916
+"graph 1","PDC","highstand","InStrength",-0.478576791849268
+"graph 1","PDC","eat_anx","InStrength",-0.186952666765917
+"graph 1","PDC","hunger_anx","OutStrength",-0.0244324660889341
+"graph 1","PDC","avoid_emo","OutStrength",-1.02148964018542
+"graph 1","PDC","wtshdiss","OutStrength",0.243783785806499
+"graph 1","PDC","bodydiss","OutStrength",-1.01711528514168
+"graph 1","PDC","highstand","OutStrength",0.132720730186579
+"graph 1","PDC","eat_anx","OutStrength",1.68653287542296
