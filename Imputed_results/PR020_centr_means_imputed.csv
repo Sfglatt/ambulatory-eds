@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","iuc","Strength",0.365946390871763
+"graph 1","PCC","highstand","Strength",0.423880115373981
+"graph 1","PCC","sens_body","Strength",-1.62854036318836
+"graph 1","PCC","mistakes","Strength",0.986886170788846
+"graph 1","PCC","stress","Strength",0.650256076028705
+"graph 1","PCC","avoid_emo","Strength",-0.79842838987494
+"graph 1","PDC","iuc","InStrength",-1.36498264595208
+"graph 1","PDC","highstand","InStrength",0.742028044996587
+"graph 1","PDC","sens_body","InStrength",-0.737702094760775
+"graph 1","PDC","mistakes","InStrength",-0.519473470958341
+"graph 1","PDC","stress","InStrength",0.98861900812373
+"graph 1","PDC","avoid_emo","InStrength",0.891511158550874
+"graph 1","PDC","iuc","OutStrength",-0.952759099418627
+"graph 1","PDC","highstand","OutStrength",1.14042534954808
+"graph 1","PDC","sens_body","OutStrength",-0.0701739656012185
+"graph 1","PDC","mistakes","OutStrength",-0.00999070863825977
+"graph 1","PDC","stress","OutStrength",-1.23291948377829
+"graph 1","PDC","avoid_emo","OutStrength",1.12541790788832
