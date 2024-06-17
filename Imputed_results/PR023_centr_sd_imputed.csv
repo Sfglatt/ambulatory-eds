@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","vomit","Strength",0.938624085292397
+"graph 1","PCC","binge","Strength",0.649948882095111
+"graph 1","PCC","hunger_anx","Strength",0.991328050871333
+"graph 1","PCC","foodrules","Strength",-0.489627348404395
+"graph 1","PCC","fearloc","Strength",-1.42557278550173
+"graph 1","PCC","avoid_food","Strength",-0.664700884352714
+"graph 1","PDC","vomit","InStrength",-0.591700567395116
+"graph 1","PDC","binge","InStrength",-0.326716741961939
+"graph 1","PDC","hunger_anx","InStrength",0.439986553439718
+"graph 1","PDC","foodrules","InStrength",-1.50551968361392
+"graph 1","PDC","fearloc","InStrength",1.23170345219897
+"graph 1","PDC","avoid_food","InStrength",0.752246987332286
+"graph 1","PDC","vomit","OutStrength",1.22963806758487
+"graph 1","PDC","binge","OutStrength",0.116022192973532
+"graph 1","PDC","hunger_anx","OutStrength",-0.856857835055214
+"graph 1","PDC","foodrules","OutStrength",0.89431931820634
+"graph 1","PDC","fearloc","OutStrength",0.00986759994765899
+"graph 1","PDC","avoid_food","OutStrength",-1.39298934365718
