@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","fearloc","Strength",-1.41985653407201
+"graph 1","PCC","iuc","Strength",-0.427586736851195
+"graph 1","PCC","urge_restrict","Strength",0.439958322600937
+"graph 1","PCC","exercise","Strength",-0.422188423034423
+"graph 1","PCC","feelfat","Strength",0.300215545452116
+"graph 1","PCC","bodydiss","Strength",1.52945782590457
+"graph 1","PDC","fearloc","InStrength",1.32518591390421
+"graph 1","PDC","iuc","InStrength",-0.217099310672733
+"graph 1","PDC","urge_restrict","InStrength",-0.299465732536526
+"graph 1","PDC","exercise","InStrength",0.969418850889728
+"graph 1","PDC","feelfat","InStrength",-0.347455033784144
+"graph 1","PDC","bodydiss","InStrength",-1.43058468780053
+"graph 1","PDC","fearloc","OutStrength",-1.16238128594409
+"graph 1","PDC","iuc","OutStrength",-0.983089121166391
+"graph 1","PDC","urge_restrict","OutStrength",1.41811573950374
+"graph 1","PDC","exercise","OutStrength",-0.157487711926831
+"graph 1","PDC","feelfat","OutStrength",0.0852952472858727
+"graph 1","PDC","bodydiss","OutStrength",0.799547132247693

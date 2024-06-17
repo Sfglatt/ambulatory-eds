@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","physsens","Strength",-0.251012457204546
+"graph 1","PCC","tired","Strength",-0.75668094242343
+"graph 1","PCC","skipmeal","Strength",1.62148482969939
+"graph 1","PCC","heartrace","Strength",-0.841776326989277
+"graph 1","PCC","sleep","Strength",-0.593339759016871
+"graph 1","PCC","physsens_eat","Strength",0.821324655934734
+"graph 1","PDC","physsens","InStrength",0.620775271438323
+"graph 1","PDC","tired","InStrength",-0.205495944990756
+"graph 1","PDC","skipmeal","InStrength",1.02779766895108
+"graph 1","PDC","heartrace","InStrength",0.861173221447793
+"graph 1","PDC","sleep","InStrength",-1.39670391208836
+"graph 1","PDC","physsens_eat","InStrength",-0.907546304758083
+"graph 1","PDC","physsens","OutStrength",0.150512013136818
+"graph 1","PDC","tired","OutStrength",0.486668473619244
+"graph 1","PDC","skipmeal","OutStrength",0.16623951627082
+"graph 1","PDC","heartrace","OutStrength",0.868340482406013
+"graph 1","PDC","sleep","OutStrength",-1.96757313396481
+"graph 1","PDC","physsens_eat","OutStrength",0.29581264853191
