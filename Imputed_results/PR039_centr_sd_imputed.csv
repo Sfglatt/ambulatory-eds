@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","highstand","Strength",0.874603669498794
+"graph 1","PCC","tired","Strength",-1.50839028248611
+"graph 1","PCC","iuc","Strength",-0.446782832282582
+"graph 1","PCC","bodycheck","Strength",-0.590859285016783
+"graph 1","PCC","physsens","Strength",0.920155418174024
+"graph 1","PCC","hunger_anx","Strength",0.751273312112656
+"graph 1","PDC","highstand","InStrength",-0.515656579390176
+"graph 1","PDC","tired","InStrength",0.632034572360324
+"graph 1","PDC","iuc","InStrength",-0.847358357112946
+"graph 1","PDC","bodycheck","InStrength",-1.14782227505755
+"graph 1","PDC","physsens","InStrength",1.45620338637836
+"graph 1","PDC","hunger_anx","InStrength",0.422599252821989
+"graph 1","PDC","highstand","OutStrength",-0.814662617872854
+"graph 1","PDC","tired","OutStrength",0.831761112548416
+"graph 1","PDC","iuc","OutStrength",-1.12730546947254
+"graph 1","PDC","bodycheck","OutStrength",1.24141010096754
+"graph 1","PDC","physsens","OutStrength",-0.707463884867517
+"graph 1","PDC","hunger_anx","OutStrength",0.576260758696955

@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","tired","Strength",-0.453418696185521
+"graph 1","PCC","sleep","Strength",-0.285963645732884
+"graph 1","PCC","highstand","Strength",-0.386701592159265
+"graph 1","PCC","relax","Strength",1.27182974646636
+"graph 1","PCC","anxiety","Strength",1.13851603485204
+"graph 1","PCC","urge_restrict","Strength",-1.28426184724073
+"graph 1","PDC","tired","InStrength",0.292756349257124
+"graph 1","PDC","sleep","InStrength",-1.26459694197803
+"graph 1","PDC","highstand","InStrength",1.2357845030719
+"graph 1","PDC","relax","InStrength",-0.52942515749807
+"graph 1","PDC","anxiety","InStrength",-0.72527855237522
+"graph 1","PDC","urge_restrict","InStrength",0.990759799522287
+"graph 1","PDC","tired","OutStrength",-0.53609195745899
+"graph 1","PDC","sleep","OutStrength",-1.61889758969052
+"graph 1","PDC","highstand","OutStrength",0.0457330074191687
+"graph 1","PDC","relax","OutStrength",0.879273703735731
+"graph 1","PDC","anxiety","OutStrength",1.14420468539173
+"graph 1","PDC","urge_restrict","OutStrength",0.0857781506028817
