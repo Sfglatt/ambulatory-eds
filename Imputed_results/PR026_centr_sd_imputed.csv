@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","eat_anx","Strength",1.7904234147614
+"graph 1","PCC","physsens_eat","Strength",-0.214505134581091
+"graph 1","PCC","eat_public","Strength",-0.464723046265581
+"graph 1","PCC","binge","Strength",0.444533566411664
+"graph 1","PCC","skipmeal","Strength",-0.528216756840707
+"graph 1","PCC","rumination","Strength",-1.02751204348569
+"graph 1","PDC","eat_anx","InStrength",-0.239994976462709
+"graph 1","PDC","physsens_eat","InStrength",1.58105578566602
+"graph 1","PDC","eat_public","InStrength",-1.3450842038694
+"graph 1","PDC","binge","InStrength",0.651118071466139
+"graph 1","PDC","skipmeal","InStrength",-0.330366246833359
+"graph 1","PDC","rumination","InStrength",-0.316728429966685
+"graph 1","PDC","eat_anx","OutStrength",1.55855403308776
+"graph 1","PDC","physsens_eat","OutStrength",0.659754605891153
+"graph 1","PDC","eat_public","OutStrength",0.177701671810461
+"graph 1","PDC","binge","OutStrength",-1.15488796786809
+"graph 1","PDC","skipmeal","OutStrength",-0.627516328229541
+"graph 1","PDC","rumination","OutStrength",-0.613606014691737
