@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","ridthoughts","Strength",-0.62061399793743
+"graph 1","PCC","intrus_thought","Strength",1.58104708006455
+"graph 1","PCC","compulsion","Strength",0.788058254023858
+"graph 1","PCC","urge_restrict","Strength",-0.0341645573292236
+"graph 1","PCC","shame","Strength",-0.965485167410851
+"graph 1","PCC","badperson","Strength",-0.748841611410905
+"graph 1","PDC","ridthoughts","InStrength",-0.574772270255827
+"graph 1","PDC","intrus_thought","InStrength",0.425627619181847
+"graph 1","PDC","compulsion","InStrength",-1.49858976160383
+"graph 1","PDC","urge_restrict","InStrength",-0.32559963863985
+"graph 1","PDC","shame","InStrength",1.29461826353866
+"graph 1","PDC","badperson","InStrength",0.678715787779007
+"graph 1","PDC","ridthoughts","OutStrength",-0.274457312499356
+"graph 1","PDC","intrus_thought","OutStrength",-1.73392169215053
+"graph 1","PDC","compulsion","OutStrength",0.194103947370286
+"graph 1","PDC","urge_restrict","OutStrength",0.142052946664181
+"graph 1","PDC","shame","OutStrength",0.35539805701807
+"graph 1","PDC","badperson","OutStrength",1.31682405359735
