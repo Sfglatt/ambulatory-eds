@@ -1,0 +1,19 @@
+"graph","type","node","measure","value"
+"graph 1","PCC","sleep","Strength",-1.10283126376731
+"graph 1","PCC","fowg","Strength",0.651659564156248
+"graph 1","PCC","feelfat","Strength",0.302319008657119
+"graph 1","PCC","wtshdiss","Strength",1.16836192743061
+"graph 1","PCC","bodydiss","Strength",0.321791260834394
+"graph 1","PCC","bodycheck","Strength",-1.34130049731107
+"graph 1","PDC","sleep","InStrength",-0.200184668005266
+"graph 1","PDC","fowg","InStrength",1.58374656867728
+"graph 1","PDC","feelfat","InStrength",-0.201783610693982
+"graph 1","PDC","wtshdiss","InStrength",0.720046300089114
+"graph 1","PDC","bodydiss","InStrength",-0.745947396343845
+"graph 1","PDC","bodycheck","InStrength",-1.15587719372331
+"graph 1","PDC","sleep","OutStrength",-1.24840872709757
+"graph 1","PDC","fowg","OutStrength",-0.767494292832737
+"graph 1","PDC","feelfat","OutStrength",0.273678663509855
+"graph 1","PDC","wtshdiss","OutStrength",0.0488889123245875
+"graph 1","PDC","bodydiss","OutStrength",1.66564438864208
+"graph 1","PDC","bodycheck","OutStrength",0.0276910554537848
