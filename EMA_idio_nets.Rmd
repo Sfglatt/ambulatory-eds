@@ -52,6 +52,41 @@ full_filename <- file.path(file_path, filename)
 write.csv(dat_sd, file = full_filename, row.names = FALSE)
 ```
 
+```{r kpss test}
+#### means ####
+vars <- names(dat_means)[-c(1:9)] 
+(kpss_means <- clairecleans::kpss_df(dat_means, vars))
+
+# visualize
+x <- "beep" 
+y <- colnames(dat_means)[-c(1:9)] 
+design.matrix <- tidyr::expand_grid(x, y)
+
+kpss_plot = function(x, y, df) {
+    df$beep <- rep(1:nrow(df))
+    ggplot(df, aes(x = .data[[x]], y = .data[[y]]) ) +
+    geom_point() +
+    geom_smooth(method = "lm", se = TRUE) +
+    theme_bw() +
+    coord_cartesian(ylim = c(0, 100)) +
+    geom_text(aes(x = 27.5, y = 95, label=paste("KPSS Trend =",round(kpss.test(.data[[y]], null = "Trend")$statistic, digits = 3),", p = ",round(kpss.test(.data[[y]], null = "Trend")$p.value, digits = 3))), colour = "red1", size = 3, fontface = "bold", check_overlap = TRUE) + 
+      theme(legend.title = element_blank())
+}
+
+(plot_grob <- plot_grid(arrangeGrob(grobs = pmap(design.matrix, ~kpss_plot(x = .x, y = .y, df= dat_means)))))
+
+#### variability ####
+
+vars <- names(dat_sd)[-c(1:9)] 
+(kpss_sd <- clairecleans::kpss_df(dat_sd, vars))
+
+# visualize
+y <- colnames(dat_sd)[-c(1:9)] 
+design.matrix <- tidyr::expand_grid(x, y)
+
+(plot_grob <- plot_grid(arrangeGrob(grobs = pmap(design.matrix, ~kpss_plot(x = .x, y = .y, df = dat_sd)))))
+```
+
 ```{r Stationarity and detrend 1}
 ##### means #####
 
@@ -138,7 +173,7 @@ dayvar <- "dayvar"
 beepvar <- "beepvar"
 
 # Estimate network
-NetMean <- graphicalVAR(dat_means, 
+NetMean <- graphicalVAR(dedatm, 
                         vars = names.means, 
                         dayvar = dayvar, 
                         beepvar = beepvar, 
@@ -192,7 +227,7 @@ beepvar <- "beepvar"
 # use dat_sd for not detrended and dedatsd for detrended
 
 # estimates network
-NetSD <- graphicalVAR(dat_sd, 
+NetSD <- graphicalVAR(dedatsd, 
                       vars = names.sd, 
                       dayvar = dayvar, 
                       beepvar = beepvar, 
@@ -280,8 +315,7 @@ full_filename <- file.path(file_path, filename)
 write.csv(dat_sd_2, file = full_filename, row.names = FALSE)
 ```
 
-```{r Stationarity and detrend 2}
-
+```{r KPSS 2}
 ##### means #####
 
 vars <- names(dat_means_2)[-c(1:9)] 
@@ -324,7 +358,21 @@ design.matrix <- tidyr::expand_grid(x, y)
 # plots out of line
 
 ##### dickey-fuller #####
-# apply(dat_sd_2[10:ncol(dat_sd_2)], 2, adf.test)
+apply(dat_sd_2[10:ncol(dat_sd_2)], 2, adf.test)
+```
+
+
+```{r Detrend 2}
+##### dickey-fuller #####
+# resource: https://www.statology.org/dickey-fuller-test-in-r/
+# sometimes KPSS test can be conservative. 
+# The assumption is no unit root (not stationary), < .05 indicates stationarity
+
+apply(dat_means_2[10:ncol(dat_means_2)], 2, adf.test) # doesn't like NAs
+
+
+##### dickey-fuller #####
+apply(dat_sd_2[10:ncol(dat_sd_2)], 2, adf.test)
 
 #### detrend ####
 
@@ -361,13 +409,13 @@ dedatsd <- bind_cols(dat[,7:8], dedatsd)
 ```
 
 ```{r Estimate means networks 2}
-# use dat_means for not detrended and dedatm for detrended
+# use dat_means_2 for not detrended and dedatm for detrended
 
 dayvar <- "dayvar"
 beepvar <- "beepvar"
 
 # Estimate network
-NetMean <- graphicalVAR(dat_means_2, 
+NetMean <- graphicalVAR(dedatm, 
                         vars = names.means, 
                         dayvar = dayvar, 
                         beepvar = beepvar, 
@@ -415,10 +463,10 @@ write.csv(pdc_corr_m, paste0("Imputed_results/", id_name, "_pdc_corr_means_imput
 dayvar <- "dayvar"
 beepvar <- "beepvar"
 
-# use dat_sd for not detrended and dedatsd for detrended
+# use dat_sd_2 for not detrended and dedatsd for detrended
 
 # estimates network
-NetSD <- graphicalVAR(dat_sd_2, 
+NetSD <- graphicalVAR(dedatsd, 
                       vars = names.sd, 
                       dayvar = dayvar, 
                       beepvar = beepvar, 
@@ -465,12 +513,5 @@ write.csv(pcc_corr_sd, pcc_corr_filename, row.names = TRUE)
 pdc_corr_sd <- data.frame(pdc_sd[[1]][[2]][[5]])
 pdc_corr_filename <- paste0("Imputed_results/", id_name, "_pdc_corr_sd_imputed.csv")
 write.csv(pdc_corr_sd, pdc_corr_filename, row.names = TRUE)
-```
-
-```{r renew log}
-# PR003: not detrended for means or SDs; non-imputed
-# PR007: not detrended for means or SDs; imputed and non-imputed
-# PR008: not-imputed detrended for means (Residual covariances not postive definite), not detrended for SDs; imputed (warning - 'possible convergence problem: 'optim' gave code = 52 and message ‘ERROR: ABNORMAL_TERMINATION_IN_LNSRCH') not detrended for means or SDs
-# PR010: not detrended for means or SDs; imputed and non-imputed
 ```
 

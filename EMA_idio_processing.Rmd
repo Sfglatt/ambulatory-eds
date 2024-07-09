@@ -5,15 +5,15 @@ output: html_notebook
 
 ```{r Github}
 # usethis::create_from_github("https://github.com/Sfglatt/ED_idiographic_networks.git",
-# destdir = "C:/Users/sofel/OneDrive/Documents/Labs/Github/ED_idiographic_net")
+# destdir = /Github/ED_idiographic_net")
 ```
 
 ```{r Workspace and packages}
 # clear work space
-rm(list=ls())
+# rm(list=ls())
 
 # set the participant ID name and file path for all forthcoming files 
-id_name = "PR011" 
+id_name = "PR042" 
 
 file_path <- file.path("Data", id_name)
 dir.create(file_path)
@@ -243,7 +243,12 @@ write.csv(dat, file = full_filename, row.names = FALSE)
 dat_2 <- dat
 
 # impute
-imp_kalman <- na_kalman(dat_2[10:ncol(dat_2)], model = "StructTS", smooth = TRUE)
+
+
+# Call na_kalman additionally supplying the specified list as optim.control variable
+# new_param <- list(maxit = 3000)
+imp_kalman <- na_kalman(dat_2[10:ncol(dat_2)], model = "StructTS", smooth = TRUE,#optim.control = new_param
+                        )
 imp_kalman <- cbind(dat_2[1:9],imp_kalman) 
 
 dat_2 <- imp_kalman 
