@@ -3,13 +3,32 @@ title: "02a_EMA_idio_centrality"
 output: html_notebook
 ---
 
+# Demographics table
+```{r demos}
+# Import data
+Demos_df <- read.csv("Raw_data/Demographics.csv")
+
+# Exclude >49% missing data
+Demos_df_filtered <- Demos_df[Demos_df$Include == 1, ]
+
+# Demographics
+table(Demos_df_filtered$dx)
+table(Demos_df_filtered$Sex.at.birth)
+table(Demos_df_filtered$Gender)
+table(Demos_df_filtered$Sexual.orientation)
+table(Demos_df_filtered$Race.ethnicity)
+summary(Demos_df_filtered$Age)
+sd(Demos_df_filtered$Age, na.rm = TRUE)
+```
+
 # Centrality tables
 ```{r set up}
 path = "Paper_res/Imputed_results"
 ```
 
-```{r Means strength centrality top 6}
-# Top 6 - means
+```{r Data}
+#### Means ####
+
 files_to_read = list.files(
   path = path,       
   pattern = "_centr_means_imputed\\.csv$", 
@@ -23,15 +42,150 @@ data_lst_means = lapply(files_to_read, read.csv)
 # combine all dataframes into one
 combined_data_means <- do.call(rbind, data_lst_means)
 
+names(data_lst_means) <- basename(files_to_read) 
+
 # Confirm categories
 unique(combined_data_means$measure)
 
-# Table for Strengths
-strength_counts <- table(combined_data_means$node[combined_data_means$measure == "Strength"])
-(strength_df <- as.data.frame(strength_counts))
+#### variability ####
+
+# Top 6 - SDs
+files_to_read = list.files(
+  path = path,       
+  pattern = "_centr_sd_imputed\\.csv$", 
+  recursive = TRUE,          
+  full.names = TRUE         
+)
+
+data_lst_sds = lapply(files_to_read, read.csv)  
+
+combined_data_sds <- do.call(rbind, data_lst_sds)
+
+names(data_lst_sds) <- basename(files_to_read) 
+```
+
+# Top 6 mean central symptoms table, whole sample
+```{r Means centrality top 6}
+strength_counts_means <- table(combined_data_means$node[combined_data_means$measure == "Strength"])
+(strength_df_means <- as.data.frame(strength_counts_means))
 # write.csv(strength_df, "Paper_res/New_tables/Top_6_centrality_imputed_means.csv")
 ```
 
+# Top 6 mean central symptoms table, sleep disturbance sample
+```{r Means centrality sleep disturbance}
+filtered_data_lst_means <- list()
+
+for (i in seq_along(data_lst_means)) {
+  df <- data_lst_means[[i]]
+  
+  # Check if they have contains either "tired" or "sleep"
+  if ("tired" %in% df$node | "sleep" %in% df$node) {
+
+    filtered_data_lst_means[[length(filtered_data_lst_means) + 1]] <- df
+  }
+}
+
+combined_data_means <- do.call(rbind, filtered_data_lst_means)
+
+# make the table
+strength_counts <- table(combined_data_means$node[combined_data_means$measure == "Strength"])
+ordered_strength_counts <- sort(strength_counts, decreasing = TRUE)
+
+combined_strength_counts <- as.data.frame(ordered_strength_counts)
+colnames(combined_strength_counts) <- c("Strength_Top", "Count")
+
+total_datasets <- 12 # your total number
+combined_strength_counts$Percentage <- (combined_strength_counts$Count / total_datasets) * 100
+
+combined_strength_counts$Count <- paste0(combined_strength_counts$Count, " (", 
+                                         sprintf("%.2f", combined_strength_counts$Percentage), "%)")
+
+combined_strength_counts$Percentage <- NULL
+
+print(combined_strength_counts)
+```
+
+# Top 6 mean central symptoms table, fowg and/or ff sample
+```{r Means centrality top 6}
+filtered_data_lst_means <- list()
+
+for (i in seq_along(data_lst_means)) {
+  df <- data_lst_means[[i]]
+  
+  if ("feelfat" %in% df$node | "fowg" %in% df$node) {
+
+    filtered_data_lst_means[[length(filtered_data_lst_means) + 1]] <- df
+  }
+}
+
+# combine all dataframes into one
+combined_data_means <- do.call(rbind, filtered_data_lst_means)
+
+# Table
+strength_counts <- table(combined_data_means$node[combined_data_means$measure == "Strength"])
+ordered_strength_counts <- sort(strength_counts, decreasing = TRUE)
+
+combined_strength_counts_w <- as.data.frame(ordered_strength_counts)
+colnames(combined_strength_counts_w) <- c("Strength_Top", "Count")
+
+total_datasets <- 20 # the total number
+combined_strength_counts_w$Percentage <- (combined_strength_counts_w$Count / total_datasets) * 100
+
+# 
+combined_strength_counts_w$Count <- paste0(combined_strength_counts_w$Count, " (", 
+                                         sprintf("%.2f", combined_strength_counts_w$Percentage), "%)")
+
+combined_strength_counts_w$Percentage <- NULL
+
+print(combined_strength_counts_w)
+```
+
+# Top 6 mean central symptoms table, no fowg and/or ff sample
+```{r Means centrality top 6}
+filtered_data_lst_means <- list()
+
+for (i in seq_along(data_lst_means)) {
+  df <- data_lst_means[[i]]
+  
+  if (!("feelfat" %in% df$node | "fowg" %in% df$node)) {
+    filtered_data_lst_means[[length(filtered_data_lst_means) + 1]] <- df
+  }
+}
+
+# combine all dataframes into one
+combined_data_means <- do.call(rbind, filtered_data_lst_means)
+
+# Table
+strength_counts <- table(combined_data_means$node[combined_data_means$measure == "Strength"])
+ordered_strength_counts <- sort(strength_counts, decreasing = TRUE)
+
+combined_strength_counts_wo <- as.data.frame(ordered_strength_counts)
+colnames(combined_strength_counts_wo) <- c("Strength_Top", "Count")
+
+total_datasets <- 11
+combined_strength_counts_wo$Percentage <- (combined_strength_counts_wo$Count / total_datasets) * 100
+
+# 
+combined_strength_counts_wo$Count <- paste0(combined_strength_counts_wo$Count, " (", 
+                                         sprintf("%.2f", combined_strength_counts_wo$Percentage), "%)")
+
+combined_strength_counts_wo$Percentage <- NULL
+
+print(combined_strength_counts_wo)
+
+#### compare top 6 with/without feel_fat and fear of weight gain ####
+
+# Which symptoms are in both
+(intersect(combined_strength_counts_w$Strength_Top, combined_strength_counts_wo$Strength_Top))
+
+# Which symptoms are uniquely not in feel_fat and fowg
+(setdiff(combined_strength_counts_wo$Strength_Top, combined_strength_counts_w$Strength_Top))
+
+# Which symptoms are uniquely in feel_fat and fowg
+(setdiff(combined_strength_counts_w$Strength_Top, combined_strength_counts_wo$Strength_Top))
+```
+
+# Top 2 mean contemporaneous central symptoms table, whole sample
 ```{r Means strength centrality top 2}
 # Table with how many times each ED features was (1) strongest and (2) second-to-strongest in the contemporaneous means network
 
@@ -62,26 +216,52 @@ combined_strength_counts[is.na(combined_strength_counts)] <- 0
 print(combined_strength_counts)
 ```
 
+# Top 6 fluctuating central symptoms table, whole sample
 ```{r SDs strength centrality top 6}
-# Top 6 - SDs
-files_to_read = list.files(
-  path = path,       
-  pattern = "_centr_sd_imputed\\.csv$", 
-  recursive = TRUE,          
-  full.names = TRUE         
-)
+strength_counts_sds <- table(combined_data_sds$node[combined_data_sds$measure == "Strength"])
+(strength_df_sds <- as.data.frame(strength_counts_sds))
 
-data_lst_sds = lapply(files_to_read, read.csv)  
+# write.csv(strength_df_sds, "Paper_res/New_tables/Top_6_centrality_imputed_sd.csv")
 
-combined_data_sds <- do.call(rbind, data_lst_sds)
-
-# Table for Strengths
-strength_counts <- table(combined_data_sds$node[combined_data_sds$measure == "Strength"])
-(strength_df <- as.data.frame(strength_counts))
-
-# write.csv(strength_df, "Paper_res/New_tables/Top_6_centrality_imputed_sd.csv")
+#### compare top 6 means and variability ####
+(intersect(strength_df_means$Var1, strength_df_sds$Var1))
 ```
 
+# Top 6 fluctuating central symptoms table, sleep disturbance sample
+```{r SDs strength centrality top 6}
+filtered_data_lst_sds <- list()
+
+for (i in seq_along(data_lst_sds)) {
+  df <- data_lst_sds[[i]]
+
+  if ("tired" %in% df$node | "sleep" %in% df$node) {
+
+    filtered_data_lst_sds[[length(filtered_data_lst_sds) + 1]] <- df
+  }
+}
+
+# combine all dataframes into one
+combined_data_sds <- do.call(rbind, filtered_data_lst_sds)
+
+# Table
+strength_counts <- table(combined_data_sds$node[combined_data_sds$measure == "Strength"])
+ordered_strength_counts <- sort(strength_counts, decreasing = TRUE)
+
+combined_strength_counts <- as.data.frame(ordered_strength_counts)
+colnames(combined_strength_counts) <- c("Strength_Top", "Count")
+
+total_datasets <- 12 # number of participants (dfs)
+combined_strength_counts$Percentage <- (combined_strength_counts$Count / total_datasets) * 100
+
+combined_strength_counts$Count <- paste0(combined_strength_counts$Count, " (", 
+                                         sprintf("%.2f", combined_strength_counts$Percentage), "%)")
+
+combined_strength_counts$Percentage <- NULL
+
+print(combined_strength_counts)
+```
+
+# Top 2 fluctuating contemporaneous central symptoms table, whole sample
 ```{r SDs strength centrality top 2}
 # Table with how many times each ED features was (1) strongest and (2) second-to-strongest in the contemporaneous variability network
 
@@ -110,7 +290,7 @@ combined_strength_counts <- merge(strength_top_counts, second_strength_counts, b
 combined_strength_counts[is.na(combined_strength_counts)] <- 0
 
 # Add percentages
-total_datasets <- 31
+total_datasets <- 31 # number of participants
 
 combined_strength_counts$Strength_Top <- paste0(combined_strength_counts$Strength_Top, " (", 
                                                 sprintf("%.2f", 
@@ -121,11 +301,11 @@ combined_strength_counts$Strength_Second <- paste0(combined_strength_counts$Stre
 
 print(combined_strength_counts)
 
-write.csv(combined_strength_counts, "Paper_res/New_tables/Top_2_strength_imputed_sds.csv")
+# write.csv(combined_strength_counts, "Paper_res/New_tables/Top_2_strength_imputed_sds.csv")
 ```
 
+# Top 2 mean temporal central symptoms table, whole sample
 ```{r Means OutStrength and InStrength}
-
 top_outstrength_nodes <- c()      
 second_outstrength_nodes <- c()   
 
@@ -135,17 +315,17 @@ second_instrength_nodes <- c()
 total_datasets <- length(data_lst_means)
 
 for (file in data_lst_means) {
-  outstrength_data <- file[file$measure == "OutStrength", ]
-  
+
+    outstrength_data <- file[file$measure == "OutStrength", ]
   outstrength_sorted <- outstrength_data[order(-outstrength_data$value), ]
   
+  # top and second outstrength nodes
   top_outstrength_nodes <- c(top_outstrength_nodes, outstrength_sorted$node[1])
   if (nrow(outstrength_sorted) >= 2) {
     second_outstrength_nodes <- c(second_outstrength_nodes, outstrength_sorted$node[2])
   }
   
   instrength_data <- file[file$measure == "InStrength", ]
-  
   instrength_sorted <- instrength_data[order(-instrength_data$value), ]
   
   top_instrength_nodes <- c(top_instrength_nodes, instrength_sorted$node[1])
@@ -154,46 +334,63 @@ for (file in data_lst_means) {
   }
 }
 
-# Count the frequency of the strongest and the second strongest
+# Frequency of the strongest and the second strongest
 outstrength_top_counts <- as.data.frame(table(top_outstrength_nodes))
 second_outstrength_counts <- as.data.frame(table(second_outstrength_nodes))
 
 instrength_top_counts <- as.data.frame(table(top_instrength_nodes))
 second_instrength_counts <- as.data.frame(table(second_instrength_nodes))
 
-colnames(outstrength_top_counts) <- c("Node", "OutStrength_Top_mean")
-colnames(second_outstrength_counts) <- c("Node", "OutStrength_Second_mean")
+# Rename columns
+colnames(outstrength_top_counts) <- c("Node", "OutStrength_Top_sd")
+colnames(second_outstrength_counts) <- c("Node", "OutStrength_Second_sd")
+colnames(instrength_top_counts) <- c("Node", "InStrength_Top_sd")
+colnames(second_instrength_counts) <- c("Node", "InStrength_Second_sd")
 
-colnames(instrength_top_counts) <- c("Node", "InStrength_Top_mean")
-colnames(second_instrength_counts) <- c("Node", "InStrength_Second_mean")
-
-# Combine OutStrength and InStrength
 combined_outstrength_counts <- merge(outstrength_top_counts, second_outstrength_counts, by = "Node", all = TRUE)
 combined_instrength_counts <- merge(instrength_top_counts, second_instrength_counts, by = "Node", all = TRUE)
 
-# Combine OutStrength and InStrength into one table
+# Combine OutStrength and InStrength
 combined_strength_counts_means <- merge(combined_outstrength_counts, combined_instrength_counts, by = "Node", all = TRUE)
 
+# Replace NAs with 0
 combined_strength_counts_means[is.na(combined_strength_counts_means)] <- 0
 
-# Add percentages 
-combined_strength_counts_means$OutStrength_Top <- paste0(combined_strength_counts_means$OutStrength_Top, " (", 
-                                                     sprintf("%.2f", (combined_strength_counts_means$OutStrength_Top / total_datasets) * 100), "%)")
-combined_strength_counts_means$OutStrength_Second <- paste0(combined_strength_counts_means$OutStrength_Second, " (", 
-                                                        sprintf("%.2f", (combined_strength_counts_means$OutStrength_Second / total_datasets) * 100), "%)")
+# Make a combined column (Top + second)
+combined_strength_counts_means$OutStrength_Combined <- combined_strength_counts_means$OutStrength_Top_sd + combined_strength_counts_means$OutStrength_Second_sd
+combined_strength_counts_means$InStrength_Combined <- combined_strength_counts_means$InStrength_Top_sd + combined_strength_counts_means$InStrength_Second_sd
 
-combined_strength_counts_means$InStrength_Top <- paste0(combined_strength_counts_means$InStrength_Top, " (", 
-                                                    sprintf("%.2f", (combined_strength_counts_means$InStrength_Top / total_datasets) * 100), "%)")
-combined_strength_counts_means$InStrength_Second <- paste0(combined_strength_counts_means$InStrength_Second, " (", 
-                                                       sprintf("%.2f", (combined_strength_counts_means$InStrength_Second / total_datasets) * 100), "%)")
+combined_strength_counts_means$OutStrength_Combined <- as.numeric(combined_strength_counts_means$OutStrength_Combined)
+combined_strength_counts_means$InStrength_Combined <- as.numeric(combined_strength_counts_means$InStrength_Combined)
 
-print(combined_strength_counts_means)
+# Order by OutStrength total
+combined_strength_counts_means <- combined_strength_counts_means[order(-combined_strength_counts_means$OutStrength_Combined), ]
 
+# format columns with ns + % 
+combined_strength_counts_means$OutStrength_Top <- paste0(combined_strength_counts_means$OutStrength_Top_sd, " (", 
+                                                       sprintf("%.2f", (combined_strength_counts_means$OutStrength_Top_sd / total_datasets) * 100), "%)")
+combined_strength_counts_means$OutStrength_Second <- paste0(combined_strength_counts_means$OutStrength_Second_sd, " (", 
+                                                          sprintf("%.2f", (combined_strength_counts_means$OutStrength_Second_sd / total_datasets) * 100), "%)")
+combined_strength_counts_means$InStrength_Top <- paste0(combined_strength_counts_means$InStrength_Top_sd, " (", 
+                                                      sprintf("%.2f", (combined_strength_counts_means$InStrength_Top_sd / total_datasets) * 100), "%)")
+combined_strength_counts_means$InStrength_Second <- paste0(combined_strength_counts_means$InStrength_Second_sd, " (", 
+                                                         sprintf("%.2f", (combined_strength_counts_means$InStrength_Second_sd / total_datasets) * 100), "%)")
+
+# Add  percentages
+combined_strength_counts_means$OutStrength_Combined_Percentage <- paste0(combined_strength_counts_means$OutStrength_Combined, " (", 
+                                                                       sprintf("%.2f", (combined_strength_counts_means$OutStrength_Combined / total_datasets) * 100), "%)")
+combined_strength_counts_means$InStrength_Combined_Percentage <- paste0(combined_strength_counts_means$InStrength_Combined, " (", 
+                                                                        sprintf("%.2f", (combined_strength_counts_means$InStrength_Combined / total_datasets) * 100), "%)")
+
+# Remove raw count columns, only ns + % columns
+combined_strength_counts_means <- combined_strength_counts_means[, !colnames(combined_strength_counts_means) %in% c("OutStrength_Top_sd", "OutStrength_Second_sd","InStrength_Top_sd", "InStrength_Second_sd", "OutStrength_Combined", "InStrength_Combined")]
+
+# Save as csv
 write.csv(combined_strength_counts_means, "Paper_res/New_tables/Top_2_out_and_in_strength_means.csv")
 ```
 
+# Top 2 fluctuating temporal central symptoms table, whole sample
 ```{r SDs OutStrength and InStrength}
-
 top_outstrength_nodes <- c()      
 second_outstrength_nodes <- c()   
 
@@ -203,17 +400,17 @@ second_instrength_nodes <- c()
 total_datasets <- length(data_lst_sds)
 
 for (file in data_lst_sds) {
-  outstrength_data <- file[file$measure == "OutStrength", ]
-  
+
+    outstrength_data <- file[file$measure == "OutStrength", ]
   outstrength_sorted <- outstrength_data[order(-outstrength_data$value), ]
   
+  # top and second outstrength nodes
   top_outstrength_nodes <- c(top_outstrength_nodes, outstrength_sorted$node[1])
   if (nrow(outstrength_sorted) >= 2) {
     second_outstrength_nodes <- c(second_outstrength_nodes, outstrength_sorted$node[2])
   }
   
   instrength_data <- file[file$measure == "InStrength", ]
-  
   instrength_sorted <- instrength_data[order(-instrength_data$value), ]
   
   top_instrength_nodes <- c(top_instrength_nodes, instrength_sorted$node[1])
@@ -222,51 +419,70 @@ for (file in data_lst_sds) {
   }
 }
 
-# Count the frequency of the strongest and the second strongest
+# Frequency of the strongest and the second strongest
 outstrength_top_counts <- as.data.frame(table(top_outstrength_nodes))
 second_outstrength_counts <- as.data.frame(table(second_outstrength_nodes))
 
 instrength_top_counts <- as.data.frame(table(top_instrength_nodes))
 second_instrength_counts <- as.data.frame(table(second_instrength_nodes))
 
+# Rename columns
 colnames(outstrength_top_counts) <- c("Node", "OutStrength_Top_sd")
 colnames(second_outstrength_counts) <- c("Node", "OutStrength_Second_sd")
-
 colnames(instrength_top_counts) <- c("Node", "InStrength_Top_sd")
 colnames(second_instrength_counts) <- c("Node", "InStrength_Second_sd")
 
-# Combine OutStrength and InStrength
 combined_outstrength_counts <- merge(outstrength_top_counts, second_outstrength_counts, by = "Node", all = TRUE)
 combined_instrength_counts <- merge(instrength_top_counts, second_instrength_counts, by = "Node", all = TRUE)
 
-# Combine OutStrength and InStrength into one table
+# Combine OutStrength and InStrength
 combined_strength_counts_sds <- merge(combined_outstrength_counts, combined_instrength_counts, by = "Node", all = TRUE)
 
+# Replace NAs with 0
 combined_strength_counts_sds[is.na(combined_strength_counts_sds)] <- 0
 
-# Add percentages 
-combined_strength_counts_sds$OutStrength_Top <- paste0(combined_strength_counts_sds$OutStrength_Top, " (", 
-                                                     sprintf("%.2f", (combined_strength_counts_sds$OutStrength_Top / total_datasets) * 100), "%)")
-combined_strength_counts_sds$OutStrength_Second <- paste0(combined_strength_counts_sds$OutStrength_Second, " (", 
-                                                        sprintf("%.2f", (combined_strength_counts_sds$OutStrength_Second / total_datasets) * 100), "%)")
+# Make a combined column (Top + second)
+combined_strength_counts_sds$OutStrength_Combined <- combined_strength_counts_sds$OutStrength_Top_sd + combined_strength_counts_sds$OutStrength_Second_sd
+combined_strength_counts_sds$InStrength_Combined <- combined_strength_counts_sds$InStrength_Top_sd + combined_strength_counts_sds$InStrength_Second_sd
 
-combined_strength_counts_sds$InStrength_Top <- paste0(combined_strength_counts_sds$InStrength_Top, " (", 
-                                                    sprintf("%.2f", (combined_strength_counts_sds$InStrength_Top / total_datasets) * 100), "%)")
-combined_strength_counts_sds$InStrength_Second <- paste0(combined_strength_counts_sds$InStrength_Second, " (", 
-                                                       sprintf("%.2f", (combined_strength_counts_sds$InStrength_Second / total_datasets) * 100), "%)")
+combined_strength_counts_sds$OutStrength_Combined <- as.numeric(combined_strength_counts_sds$OutStrength_Combined)
+combined_strength_counts_sds$InStrength_Combined <- as.numeric(combined_strength_counts_sds$InStrength_Combined)
 
-print(combined_strength_counts_sds)
+# Order by OutStrength total
+combined_strength_counts_sds <- combined_strength_counts_sds[order(-combined_strength_counts_sds$OutStrength_Combined), ]
 
+# format columns with ns + % 
+combined_strength_counts_sds$OutStrength_Top <- paste0(combined_strength_counts_sds$OutStrength_Top_sd, " (", 
+                                                       sprintf("%.2f", (combined_strength_counts_sds$OutStrength_Top_sd / total_datasets) * 100), "%)")
+combined_strength_counts_sds$OutStrength_Second <- paste0(combined_strength_counts_sds$OutStrength_Second_sd, " (", 
+                                                          sprintf("%.2f", (combined_strength_counts_sds$OutStrength_Second_sd / total_datasets) * 100), "%)")
+combined_strength_counts_sds$InStrength_Top <- paste0(combined_strength_counts_sds$InStrength_Top_sd, " (", 
+                                                      sprintf("%.2f", (combined_strength_counts_sds$InStrength_Top_sd / total_datasets) * 100), "%)")
+combined_strength_counts_sds$InStrength_Second <- paste0(combined_strength_counts_sds$InStrength_Second_sd, " (", 
+                                                         sprintf("%.2f", (combined_strength_counts_sds$InStrength_Second_sd / total_datasets) * 100), "%)")
+
+# Add  percentages
+combined_strength_counts_sds$OutStrength_Combined_Percentage <- paste0(combined_strength_counts_sds$OutStrength_Combined, " (", 
+                                                                       sprintf("%.2f", (combined_strength_counts_sds$OutStrength_Combined / total_datasets) * 100), "%)")
+combined_strength_counts_sds$InStrength_Combined_Percentage <- paste0(combined_strength_counts_sds$InStrength_Combined, " (", 
+                                                                        sprintf("%.2f", (combined_strength_counts_sds$InStrength_Combined / total_datasets) * 100), "%)")
+
+# Remove raw count columns, only ns + % columns
+combined_strength_counts_sds <- combined_strength_counts_sds[, !colnames(combined_strength_counts_sds) %in% c("OutStrength_Top_sd", "OutStrength_Second_sd","InStrength_Top_sd", "InStrength_Second_sd", "OutStrength_Combined", "InStrength_Combined")]
+
+# Save as csv
 write.csv(combined_strength_counts_sds, "Paper_res/New_tables/Top_2_out_and_in_strength_sds.csv")
 ```
 
+# Combined means/fluctuating top 2 temporal central symptoms table, whole sample
 ```{r Means and SDs OutStrength and InStrength}
 combined_strength_counts_all <- merge(combined_strength_counts_means, combined_strength_counts_sds, by = "Node", all = TRUE)
 
 write.csv(combined_strength_counts_all, "Paper_res/New_tables/Top_2_out_and_in_strength_means_and_sds.csv")
 ```
 
-```{r Break down feel_fat and fowg}
+# Tease ff and fowg in means networks
+```{r feel_fat and fowg means}
 data_lst_means <- lapply(files_to_read, read.csv)
 
 count_only_feelfat <- 0
@@ -291,37 +507,79 @@ for (df in data_lst_means) {
 cat("Files with only Feeling Fat (no Fear of Weight Gain):", count_only_feelfat, "\n")
 cat("Files with only Fear of Weight Gain (no Feeling Fat):", count_only_fowg, "\n")
 cat("Files with both Feeling Fat and Fear of Weight Gain:", count_both_nodes, "\n")
+
+# not looking at this in fluctuating network because ff/fowg only appeared once
 ```
 
-```{r Break down sleep disurbances}
-data_lst_means <- lapply(files_to_read, read.csv)
-
+# Tease sleep disturbances in means networks
+```{r sleep disurbances means}
 count_only_tired <- 0
 count_only_sleep <- 0
 count_both_nodes <- 0
 
-for (df in data_lst_means) {
+dfs_only_tired <- c()
+dfs_only_sleep <- c()
+dfs_both_nodes <- c()
+
+for (df_name in names(data_lst_means)) {
+  df <- data_lst_means[[df_name]]
   
   has_tired <- any(df$node == "tired")
   has_sleep <- any(df$node == "sleep")
   
-  
   if (has_tired && !has_sleep) {
     count_only_tired <- count_only_tired + 1
+    dfs_only_tired <- c(dfs_only_tired, df_name)
   } else if (!has_tired && has_sleep) {
     count_only_sleep <- count_only_sleep + 1
+    dfs_only_sleep <- c(dfs_only_sleep, df_name)
   } else if (has_tired && has_sleep) {
     count_both_nodes <- count_both_nodes + 1
+    dfs_both_nodes <- c(dfs_both_nodes, df_name)
   }
 }
 
-cat("Files with only Tired (no sleep):", count_only_tired, "\n")
-cat("Files with only sleep (no Tired):", count_only_sleep, "\n")
-cat("Files with both Tired and sleep:", count_both_nodes, "\n")
+cat("Data frames with only Tired (no sleep):", count_only_tired, "->", paste(dfs_only_tired, collapse=", "), "\n")
+cat("Data frames with only Sleep (no tired):", count_only_sleep, "->", paste(dfs_only_sleep, collapse=", "), "\n")
+cat("Data frames with both Tired and Sleep:", count_both_nodes, "->", paste(dfs_both_nodes, collapse=", "), "\n")
 ```
 
-```{r Break down sleep disturbances by feel_fat and fowg}
-# For participants with tiredness and fatigue and no low sleep, what is the breakdown of feel_fat and fowg?
+# Tease sleep disturbances in fluctuating networks
+```{r sleep disurbances variability}
+count_only_tired <- 0
+count_only_sleep <- 0
+count_both_nodes <- 0
+
+dfs_only_tired <- c()
+dfs_only_sleep <- c()
+dfs_both_nodes <- c()
+
+for (df_name in names(data_lst_sds)) {
+  df <- data_lst_sds[[df_name]]
+  
+  has_tired <- any(df$node == "tired")
+  has_sleep <- any(df$node == "sleep")
+  
+  if (has_tired && !has_sleep) {
+    count_only_tired <- count_only_tired + 1
+    dfs_only_tired <- c(dfs_only_tired, df_name)
+  } else if (!has_tired && has_sleep) {
+    count_only_sleep <- count_only_sleep + 1
+    dfs_only_sleep <- c(dfs_only_sleep, df_name)
+  } else if (has_tired && has_sleep) {
+    count_both_nodes <- count_both_nodes + 1
+    dfs_both_nodes <- c(dfs_both_nodes, df_name)
+  }
+}
+
+cat("Data frames with only Tired (no sleep):", count_only_tired, "->", paste(dfs_only_tired, collapse=", "), "\n")
+cat("Data frames with only Sleep (no tired):", count_only_sleep, "->", paste(dfs_only_sleep, collapse=", "), "\n")
+cat("Data frames with both Tired and Sleep:", count_both_nodes, "->", paste(dfs_both_nodes, collapse=", "), "\n")
+```
+
+# Tease sleep disturbances in means networks by ff and fowg
+```{r sleep disturbances by feel_fat and fowg}
+# 1) For participants with tiredness and fatigue and no low sleep, what is the breakdown of feel_fat and fowg?
 
 filtered_data_lst_means <- list()
 for (i in seq_along(data_lst_means)) {
@@ -353,7 +611,8 @@ cat("Files with 'tired' and no low sleep and only Feeling Fat (no Fear of Weight
 cat("Files with 'tired' and no low sleep and only Fear of Weight Gain (no Feeling Fat):", count_only_fowg, "\n")
 cat("Files with 'tired' and no low sleep and both Feeling Fat and Fear of Weight Gain:", count_both_nodes, "\n")
 
-# For participants with low sleep quality, what is the breakdown of feel_fat and fowg?
+# 2) For participants with low sleep quality, what is the breakdown of feel_fat and fowg?
+
 filtered_data_lst_means <- list()
 for (i in seq_along(data_lst_means)) {
   df <- data_lst_means[[i]]
@@ -383,9 +642,12 @@ for (df in filtered_data_lst_means) {
 cat("Files with low sleep and only Feeling Fat (no Fear of Weight Gain):", count_only_feelfat, "\n")
 cat("Files with low sleep and only Fear of Weight Gain (no Feeling Fat):", count_only_fowg, "\n")
 cat("Files with low sleep and both Feeling Fat and Fear of Weight Gain:", count_both_nodes, "\n")
+
+# not looking at this in fluctuating network because ff/fowg only appeared once
 ```
 
-```{r Unique combination of nodes across networks}
+# Unique combination of nodes across participants
+```{r Node combinations}
 # Means
 all_combos <- list()
 for (df in data_lst_means) {
@@ -399,7 +661,7 @@ for (df in data_lst_means) {
   }
 }
 
-#  unique combinations of variables across participants
+#  unique combinations of variables across participants in mean central networks
 combo_counts <- data.frame(table(unlist(all_combos)))
 colnames(combo_counts) <- c("Node Combination", "Count")
 combo_counts # all unique
@@ -417,12 +679,13 @@ for (df in data_lst_sds) {
   }
 }
 
-#  unique combinations of variables across participants
+#  unique combinations of variables across participants in fluctuating central networks
 combo_counts <- data.frame(table(unlist(all_combos)))
 colnames(combo_counts) <- c("Node Combination", "Count")
 combo_counts # all unique
 ```
 
+# Frequency of symptom pairs across participants
 ```{r Frequent combination of nodes across networks}
 # Means
 co_occurrence_list <- list()
@@ -441,7 +704,7 @@ for (df in data_lst_means) {
   }
 }
 
-# Frequency of each symptom pair
+# Frequency of each symptom pair in means networks
 co_occurrence_counts <- as.data.frame(table(unlist(co_occurrence_list)))
 colnames(co_occurrence_counts) <- c("Node_Pair", "Frequency")
 (co_occurrence_counts <- co_occurrence_counts[order(-co_occurrence_counts$Frequency), ])
@@ -463,7 +726,7 @@ for (df in data_lst_sds) {
   }
 }
 
-# frequency of each symptom pair
+# frequency of each symptom pair in fluctuating networks
 co_occurrence_counts <- as.data.frame(table(unlist(co_occurrence_list)))
 colnames(co_occurrence_counts) <- c("Node_Pair", "Frequency")
 (co_occurrence_counts <- co_occurrence_counts[order(-co_occurrence_counts$Frequency), ])
