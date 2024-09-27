@@ -1,0 +1,218 @@
+---
+title: "03_pres_analysis"
+author: "Sglatt"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+if (!require("dplyr")) {install.packages("dplyr"); require("dplyr")} 
+if (!require("tidyverse")) {install.packages("tidyverse"); require("tidyverse")} 
+```
+
+# path to pull individual central symptom files from
+```{r set up}
+path = "Paper_res/Imputed_results"
+```
+
+# read in each network central mean and variable symptoms 
+```{r Data}
+#### means ####
+files_to_read = list.files(
+  path = path,       
+  pattern = "_centr_means_imputed\\.csv$", 
+  recursive = TRUE,         
+  full.names = TRUE          
+)
+
+data_lst_means = lapply(files_to_read, read.csv) 
+combined_data_means <- do.call(rbind, data_lst_means)
+names(data_lst_means) <- basename(files_to_read) 
+unique(combined_data_means$measure)
+
+#### variability ####
+files_to_read = list.files(
+  path = path,       
+  pattern = "_centr_sd_imputed\\.csv$", 
+  recursive = TRUE,          
+  full.names = TRUE         
+)
+
+data_lst_sds = lapply(files_to_read, read.csv)  
+combined_data_sds <- do.call(rbind, data_lst_sds)
+names(data_lst_sds) <- basename(files_to_read) 
+```
+
+# how many symptoms appeared in means networks?
+```{r}
+strength_counts_means <- table(combined_data_means$node[combined_data_means$measure == "Strength"])
+(strength_df_means <- as.data.frame(strength_counts_means))
+```
+
+# how many symptoms appeared in variability networks?
+```{r}
+strength_counts_sds <- table(combined_data_sds$node[combined_data_sds$measure == "Strength"])
+(strength_df_sds <- as.data.frame(strength_counts_sds))
+```
+
+# how many symptoms appeared in means and variability networks across participants?
+```{r}
+(intersect(strength_df_means$Var1, strength_df_sds$Var1))
+```
+
+# how many symptom ~pairs appeared in means networks across participants?
+```{r Means frequent combination nodes}
+co_occurrence_list <- list()
+
+for (participant_id in names(data_lst_means)) {
+  df <- data_lst_means[[participant_id]]
+  strength_data <- df %>% filter(measure == "Strength")
+  nodes <- strength_data$node
+
+  if (length(nodes) > 1) {
+    node_pairs <- combn(nodes, 2)
+    
+    # Sort pairs to avoid duplicates 
+    sorted_pairs <- apply(node_pairs, 2, function(x) paste(sort(x), collapse = "__"))
+    
+    # ADD PARTICIPANT ID!!
+    participant_pairs <- data.frame(Node_Pair = sorted_pairs, 
+                                    Participant_ID = gsub("_centr_means_imputed.csv", "", participant_id))  
+    
+    co_occurrence_list[[participant_id]] <- participant_pairs
+  }
+}
+
+# frequency of each symptom pair in mean networks
+co_occurrence_combined <- do.call(rbind, co_occurrence_list)
+
+co_occurrence_counts <- co_occurrence_combined %>%
+  group_by(Node_Pair) %>%
+  summarize(Frequency = n(), Participants = paste(unique(Participant_ID), collapse = ", ")) %>%
+  arrange(desc(Frequency))
+
+colnames(co_occurrence_counts) <- c("Node_Pair", "Frequency", "Participants")
+
+(co_occurrence_counts_means <- co_occurrence_counts[order(-co_occurrence_counts$Frequency), ])
+
+(Mean_pairs <- ggplot(co_occurrence_counts_means, aes(x = reorder(Node_Pair, Frequency), y = Frequency)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +  
+  labs(title = "Frequency of Unique Co-occurring Symptom Pairs - mean",
+       x = "Symptom Pairs",
+       y = "Frequency") +
+  theme_minimal())
+```
+
+# Symptom pairs with one specified central means symptom 
+```{r}
+central_symptom <- "feelfat"
+
+co_occurrence_counts_means$Node_Pair <- as.character(co_occurrence_counts_means$Node_Pair)
+
+(central_pairs <- co_occurrence_counts_means %>%
+  filter(grepl(central_symptom, Node_Pair))) # filter for pairs with specified symptom above
+
+paired_symptoms <- do.call(rbind, strsplit(central_pairs$Node_Pair, "__")) # Split for itemized
+(paired_symptoms <- unique(paired_symptoms[paired_symptoms != central_symptom])) # list of all it co-occurred with
+```
+
+# how many symptom ~pairs appeared in variability networks across participants?
+```{r SD frequent combination nodes}
+co_occurrence_list <- list()
+
+for (participant_id in names(data_lst_sds)) {
+  df <- data_lst_sds[[participant_id]]
+  strength_data <- df %>% filter(measure == "Strength")
+  nodes <- strength_data$node
+
+  if (length(nodes) > 1) {
+    node_pairs <- combn(nodes, 2)
+    
+    # Sort pairs to avoid duplicates 
+    sorted_pairs <- apply(node_pairs, 2, function(x) paste(sort(x), collapse = "__"))
+    
+    # ADD PARTICIPANT ID!!
+    participant_pairs <- data.frame(Node_Pair = sorted_pairs, 
+                                    Participant_ID = gsub("_centr_sd_imputed.csv", "", participant_id))  
+    
+    co_occurrence_list[[participant_id]] <- participant_pairs
+  }
+}
+
+# frequency of each symptom pair in fluctuating networks
+co_occurrence_combined <- do.call(rbind, co_occurrence_list)
+
+co_occurrence_counts <- co_occurrence_combined %>%
+  group_by(Node_Pair) %>%
+  summarize(Frequency = n(), Participants = paste(unique(Participant_ID), collapse = ", ")) %>%
+  arrange(desc(Frequency))
+
+colnames(co_occurrence_counts) <- c("Node_Pair", "Frequency", "Participants")
+
+(co_occurrence_counts_SD <- co_occurrence_counts[order(-co_occurrence_counts$Frequency), ])
+
+(SD_pairs <- ggplot(co_occurrence_counts_SD, aes(x = reorder(Node_Pair, Frequency), y = Frequency)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +  
+  labs(title = "Frequency of Unique Co-occurring Symptom Pairs - SD",
+       x = "Symptom Pairs",
+       y = "Frequency") +
+  theme_minimal())
+```
+
+# Symptom pairs with one specified central variable symptom 
+```{r}
+central_symptom <- "feelfat"
+
+co_occurrence_counts_SD$Node_Pair <- as.character(co_occurrence_counts_SD$Node_Pair)
+
+(central_pairs <- co_occurrence_counts_SD %>%
+  filter(grepl(central_symptom, Node_Pair))) # filter for pairs with specified symptom above
+
+paired_symptoms <- do.call(rbind, strsplit(central_pairs$Node_Pair, "__")) # Split for itemized
+(paired_symptoms <- unique(paired_symptoms[paired_symptoms != central_symptom])) # list of all it co-occurred with
+```
+
+# how many unique symptom sets across means networks?
+```{r Means node combinations}
+all_combos <- list()
+for (df in data_lst_means) {
+  df_means <- df %>% filter(measure == "Strength")  
+  split_data <- split(df_means, list(df_means$graph, df_means$type))
+  for (subset in split_data) {
+    if (nrow(subset) > 0) {
+      nodes_sorted <- paste(sort(subset$node), collapse = " ")
+      all_combos <- c(all_combos, nodes_sorted)
+    }
+  }
+}
+
+combo_counts <- data.frame(table(unlist(all_combos)))
+colnames(combo_counts) <- c("Node Combination", "Count")
+combo_counts # all unique
+```
+
+# how many unique symptom sets across variability networks?
+```{r SD node combinations}
+all_combos <- list()
+for (df in data_lst_sds) {
+  df_means <- df %>% filter(measure == "Strength")  
+  split_data <- split(df_means, list(df_means$graph, df_means$type))
+  for (subset in split_data) {
+    if (nrow(subset) > 0) {
+      nodes_sorted <- paste(sort(subset$node), collapse = " ")
+      all_combos <- c(all_combos, nodes_sorted)
+    }
+  }
+}
+
+combo_counts <- data.frame(table(unlist(all_combos)))
+colnames(combo_counts) <- c("Node Combination", "Count")
+combo_counts # all unique
+```
+
