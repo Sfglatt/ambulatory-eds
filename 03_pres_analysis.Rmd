@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r packages}
 if (!require("dplyr")) {install.packages("dplyr"); require("dplyr")} 
+if (!require("ggplot2")) {install.packages("ggplot2"); require("ggplot2")} 
 if (!require("tidyverse")) {install.packages("tidyverse"); require("tidyverse")} 
 ```
 
@@ -48,24 +49,76 @@ names(data_lst_sds) <- basename(files_to_read)
 ```
 
 # how many symptoms appeared in means networks?
-```{r}
+```{r Mean freq}
 strength_counts_means <- table(combined_data_means$node[combined_data_means$measure == "Strength"])
-(strength_df_means <- as.data.frame(strength_counts_means))
+(strength_df_means <- as.data.frame(strength_counts_means)) 
+strength_df_means$label <- paste(strength_df_means$Var1, "\n", strength_df_means$Freq)
 ```
 
 # how many symptoms appeared in variability networks?
-```{r}
+```{r SD freq}
 strength_counts_sds <- table(combined_data_sds$node[combined_data_sds$measure == "Strength"])
 (strength_df_sds <- as.data.frame(strength_counts_sds))
+strength_df_sds$label <- paste(strength_df_sds$Var1, "\n", strength_df_sds$Freq)
+```
+
+# treemaps & sunbursts of frequency of symptoms in means and variability networks
+```{r SD freq}
+# mean network
+pdf("03_pres_analysis_output/Treemap_means.pdf", width = 12, height = 8)
+(treemap(
+  strength_df_means,
+  index = "label",              
+  vSize = "Freq",               
+  vColor = "Freq",             
+  draw.labels = TRUE,           
+  type = "value",               
+  title = "Frequency of Nodes in Mean Networks",
+  palette = "Blues",            
+  fontsize.labels = 14,          
+  fontcolor.labels = "white",   
+  force.print.labels = TRUE))
+dev.off()
+
+# variability network
+pdf("03_pres_analysis_output/Treemap_SDs.pdf", width = 12, height = 8)
+(treemap(
+  strength_df_sds,
+  index = "label",              
+  vSize = "Freq",               
+  vColor = "Freq",             
+  draw.labels = TRUE,           
+  type = "value",               
+  title = "Frequency of Nodes in Variability Networks",
+  palette = "Purples",            
+  fontsize.labels = 14,          
+  fontcolor.labels = "white",   
+  force.print.labels = TRUE))
+dev.off()
+
+# Subursts; Download as png on top of the images
+plot_ly(
+  labels = strength_df_means$label,
+  parents = "", 
+  values = strength_df_means$Freq,
+  type = 'sunburst'
+)
+
+plot_ly(
+  labels = strength_df_sds$label,
+  parents = "", 
+  values = strength_df_sds$Freq,
+  type = 'sunburst'
+)
 ```
 
 # how many symptoms appeared in means and variability networks across participants?
-```{r}
+```{r Common}
 (intersect(strength_df_means$Var1, strength_df_sds$Var1))
 ```
 
 # how many symptom ~pairs appeared in means networks across participants?
-```{r Means frequent combination nodes}
+```{r Means combination nodes}
 co_occurrence_list <- list()
 
 for (participant_id in names(data_lst_means)) {
@@ -106,10 +159,14 @@ colnames(co_occurrence_counts) <- c("Node_Pair", "Frequency", "Participants")
        x = "Symptom Pairs",
        y = "Frequency") +
   theme_minimal())
+
+pdf("Idio_mean_symptom_pairs_frequency.pdf", width = 7, height = 35)
+Mean_pairs
+dev.off()
 ```
 
 # Symptom pairs with one specified central means symptom 
-```{r}
+```{r Mean node combination}
 central_symptom <- "feelfat"
 
 co_occurrence_counts_means$Node_Pair <- as.character(co_occurrence_counts_means$Node_Pair)
@@ -122,7 +179,7 @@ paired_symptoms <- do.call(rbind, strsplit(central_pairs$Node_Pair, "__")) # Spl
 ```
 
 # how many symptom ~pairs appeared in variability networks across participants?
-```{r SD frequent combination nodes}
+```{r SD combination nodes}
 co_occurrence_list <- list()
 
 for (participant_id in names(data_lst_sds)) {
@@ -166,20 +223,20 @@ colnames(co_occurrence_counts) <- c("Node_Pair", "Frequency", "Participants")
 ```
 
 # Symptom pairs with one specified central variable symptom 
-```{r}
+```{r SD node combination}
 central_symptom <- "feelfat"
 
 co_occurrence_counts_SD$Node_Pair <- as.character(co_occurrence_counts_SD$Node_Pair)
 
 (central_pairs <- co_occurrence_counts_SD %>%
-  filter(grepl(central_symptom, Node_Pair))) # filter for pairs with specified symptom above
+  filter(grepl(central_symptom, Node_Pair))) # filter for pairs 
 
 paired_symptoms <- do.call(rbind, strsplit(central_pairs$Node_Pair, "__")) # Split for itemized
 (paired_symptoms <- unique(paired_symptoms[paired_symptoms != central_symptom])) # list of all it co-occurred with
 ```
 
 # how many unique symptom sets across means networks?
-```{r Means node combinations}
+```{r Means node sets}
 all_combos <- list()
 for (df in data_lst_means) {
   df_means <- df %>% filter(measure == "Strength")  
@@ -194,11 +251,11 @@ for (df in data_lst_means) {
 
 combo_counts <- data.frame(table(unlist(all_combos)))
 colnames(combo_counts) <- c("Node Combination", "Count")
-combo_counts # all unique
+combo_counts 
 ```
 
 # how many unique symptom sets across variability networks?
-```{r SD node combinations}
+```{r SD node sets}
 all_combos <- list()
 for (df in data_lst_sds) {
   df_means <- df %>% filter(measure == "Strength")  
@@ -213,6 +270,5 @@ for (df in data_lst_sds) {
 
 combo_counts <- data.frame(table(unlist(all_combos)))
 colnames(combo_counts) <- c("Node Combination", "Count")
-combo_counts # all unique
+combo_counts 
 ```
-
