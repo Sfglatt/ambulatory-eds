@@ -1,5 +1,5 @@
 ---
-title: "03_pres_analysis"
+title: "04a_pres_analysis"
 author: "Sglatt"
 date: "`r Sys.Date()`"
 output: html_document
@@ -65,7 +65,7 @@ strength_df_sds$label <- paste(strength_df_sds$Var1, "\n", strength_df_sds$Freq)
 # treemaps & sunbursts of frequency of symptoms in means and variability networks
 ```{r SD freq}
 # mean network
-pdf("03_pres_analysis_output/Treemap_means.pdf", width = 12, height = 8)
+pdf("04a_pres_analysis_output/Treemap_means.pdf", width = 12, height = 8)
 (treemap(
   strength_df_means,
   index = "label",              
@@ -81,7 +81,7 @@ pdf("03_pres_analysis_output/Treemap_means.pdf", width = 12, height = 8)
 dev.off()
 
 # variability network
-pdf("03_pres_analysis_output/Treemap_SDs.pdf", width = 12, height = 8)
+pdf("04a_pres_analysis_output/Treemap_SDs.pdf", width = 12, height = 8)
 (treemap(
   strength_df_sds,
   index = "label",              
