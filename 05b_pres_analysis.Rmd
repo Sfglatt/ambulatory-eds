@@ -35,9 +35,6 @@ knitr::opts_chunk$set(echo = TRUE)
 PR042_df <- read.csv("Created_data/PR042/PR042_rawwithtime2024-06-16.csv")
 PR020_df <- read.csv("Created_data/PR020/PR020_rawwithtime2024-05-29.csv")
 
-kurtosis(PR020_df$desirethin, na.rm = TRUE)
-kurtosis(PR020_subset$desirethin, na.rm = TRUE)
-
 PR042_subset <- PR042_df[, c(1, 5, 7, 8, 
                              11, 18, 22, 37, 38, 19)]
 PR020_subset <- PR020_df[, c(1, 5, 7, 8, 
@@ -80,10 +77,13 @@ selected_data <- PR042_subset[, c("restrict", "mistakes")]
 npn_results <- huge.npn(as.matrix(selected_data), npn.func = "shrinkage", verbose = TRUE)
 PR042_subset[, c("restrict", "mistakes")] <- npn_results
 
-
 selected_data <- PR020_subset[, c("restrict", "mistakes", "desirethin")]
 npn_results <- huge.npn(as.matrix(selected_data), npn.func = "shrinkage", verbose = TRUE)
 PR020_subset[, c("restrict", "mistakes", "desirethin")] <- npn_results
+
+# Check one
+skewness(PR020_df$restrict, na.rm = TRUE)     # 6.9
+skewness(PR020_subset$restrict, na.rm = TRUE) # 3.4
 ```
 
 # Stationarity
