@@ -1,0 +1,263 @@
+---
+title: "05c_pres_analysis"
+author: "Sglatt"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Nomothetic & idiographic dimensionality; ergodicity
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+if (!require("dplyr")) {install.packages("dplyr"); require("dplyr")} 
+if (!require("EGAnet")) {install.packages("EGAnet"); require("EGAnet")} 
+if (!require("readr")) {install.packages("readr"); require("readr")} 
+if (!require("psych")) {install.packages("psych"); require("psych")} 
+if (!require("purrr")) {install.packages("purrr"); require("purrr")} 
+if (!require("stringr")) {install.packages("stringr"); require("stringr")} 
+```
+
+# Pull imputed data from 31 participants with < 50% raw data missing and combine into a single dataset
+```{r import data}
+main_dir <- "Created_data" # Folder with imputed data for each person created from script 01
+folders <- list.dirs(main_dir, recursive = FALSE)
+
+# These participants had <50% raw data
+exclude_folders <- c("PR104", "PR089", "PR086", "PR084", "PR082", "PR079", "PR074", "PR073")
+
+folders_to_include <- folders[!basename(folders) %in% exclude_folders]
+
+get_files <- function(folder) {
+  pr_name <- basename(folder) 
+  pattern <- paste0("^", pr_name, "_imputed_rawwithtime.*\\.csv$")  
+  list.files(folder, pattern = pattern, full.names = TRUE)
+}
+
+files_to_read <- map(folders_to_include, get_files) %>% unlist()
+
+# combine all participant data
+all_data <- map_dfr(files_to_read, read_csv)
+head(all_data) # look at it!
+colnames(all_data)
+
+# Merge in dx column from demographics spreadsheet
+demos <- read.csv("Raw_data/Demographics.csv")
+
+all_data <- all_data %>% 
+  left_join(demos %>% select(ID, dx), by = "ID")
+
+# look at dx breakdown
+dx_totals <- all_data %>%
+  group_by(ID) %>%
+  slice(1) %>%  
+  count(dx) %>%  
+  ungroup() %>%
+  count(dx)  
+
+dx_totals
+
+# Filter to only AN or AAN
+all_data_an <- all_data %>%
+  filter(dx %in% c("AAN", "AN"))
+```
+
+# remove variables for analysis
+```{r data vars}
+# Unique variable analysis
+all_data_an_uva  <- UVA(
+  data = all_data_an[, -c(1:9, 72)])
+
+all_data_an_uva
+all_data_an_uva$keep_remove
+
+describe(all_data_an[, -c(1:9, 72)]) # aggregated across people
+
+# Remove items
+all_data_an_clean <- all_data_an %>%
+  select(-fowg, -badperson, -bodydiss, -shame, -thought_death, -laxdiur, # Remove per UVA
+         
+         -badperson, -worthless, -thought_death, -vomit, -binge, -intrus_thought, -food_intrus, -sad,
+         -selfharm, -drink_public, -heartrace, -rumination, -avoid_sit, -physsens_eat, -ridthoughts, 
+         -chewspit, -memories, # remove because low endorsed.
+         -intrus_thought, -scared, -impulse, -compulsion, -socialanx, -eat_public, -agitated, -sleep, -tired,
+         -anxiety, -si, relax, -stress, -saa, -emo_overwhelm, -worryoverwhelm, -sens_body, -physsens)
+
+colnames(all_data_an_clean)
+
+# Remove other non-symptom extra variables
+all_data_an_clean <- all_data_an_clean %>%
+  select(-c(2:9))
+
+describe(all_data_an_clean[, -1]) 
+```
+
+# dynamic EGA; 
+# is similar to EGA but evaluates the degree to which nodes change together over time.
+# communities of nodes represent dynamical factors containing items that change together as a function of time.
+```{r}
+parallel::detectCores()
+
+# Individual structures with first-order derivatives
+(dyn_ega_d1 <- dynEGA(
+  data = all_data_an_clean %>% filter(!ID %in% c("PR020", "PR042")), # need to remove on account of non-moving time d's
+  n.embed = 5, tau = 1,
+  delta = 1, id = 1, group = "dx", 
+  use.derivatives = 1, 
+  level = c("population", "group", "individual"),
+  model = "glasso", algorithm = "walktrap", 
+  corr = "cor_auto",
+  ncores = 4
+))
+
+dyn_ega_d1
+
+# Derive first-order derivatives
+str(dyn_ega_d1)
+str(dyn_ega_d1$Derivatives)
+# dyn_ega$Derivatives$Estimates$PR007
+# Derivatives_PR007 <- as.data.frame(dyn_ega$Derivatives$Estimates$PR007)
+# View(Derivatives_PR007)
+
+dyn_ega_d1$Derivatives$EstimatesDF
+Derivatives_data <- as.data.frame(dyn_ega_d1$Derivatives$EstimatesDF)
+
+# plots
+plot(dyn_ega_d1$dynEGA$population)
+plot(dyn_ega_d1$dynEGA$group)
+plot(dyn_ega_d1$dynEGA$individual)
+plot(dyn_ega_d1$dynEGA$individual, id = "PR003")
+
+# save images
+pdf("05c_Output/dynamic_ega_pop.pdf", width = 7, height = 7)
+plot(dyn_ega_d1$dynEGA$population)
+dev.off()
+
+pdf("05c_Output/dynamic_ega_group.pdf", width = 14, height = 7)
+plot(dyn_ega_d1$dynEGA$group)
+dev.off()
+
+pdf("05c_Output/dynamic_ega_individual.pdf", width = 14, height = 14)
+plot(dyn_ega_d1$dynEGA$individual)
+dev.off()
+```
+
+# empirical ergodicity information index for the full sample
+```{r EII full}
+# needs a slightly different dynEGA initial function that doesn't include group!
+
+# need to remove group dx column from data
+all_data_an_clean_2 <- all_data_an_clean %>%
+  select(-27)
+
+dyn_ega_d1_2 <- dynEGA.ind.pop(
+  data = all_data_an_clean_2 %>% filter(!ID %in% c("PR020", "PR042")), 
+  n.embed = 5, tau = 1,
+  delta = 1, id = 1, 
+  use.derivatives = 1, 
+  model = "glasso", algorithm = "walktrap", 
+  corr = "cor_auto",
+  ncores = 4
+)
+
+dyn_ega_d1_2
+
+plot(dyn_ega_d1_2$dynEGA$population) # note, this should 100% match the other dynEGA structure above
+plot(dyn_ega_d1_2$dynEGA$individual) # ^ same goes for individuals
+
+# Compute empirical ergodicity information index for the group
+eii <- ergoInfo(dyn_ega_d1_2)
+eii
+
+set.seed(123456)
+boot_eii <- boot.ergoInfo(
+  dyn_ega_d1_2,
+  eii,
+  shuffles = 5000,
+  iter = 100,
+  ncores = 4,
+  verbose = TRUE
+)
+
+boot_eii
+plot(boot_eii)
+
+# Golino, H., Nesselroade, J. R., & Christensen, A. P. (2022). Toward a psychology of individuals: The ergodicity information index and a bottom-up approach for finding generalizations. PsyArXiv.
+```
+
+# empirical ergodicity information index for the AN group
+```{r EII an}
+AN_data <- all_data_an_clean %>%
+  filter(!ID %in% c("PR020", "PR042"), dx == "AN")
+
+dyn_ega_an_only <- dynEGA.ind.pop(
+  data = AN_data[, -27],
+  n.embed = 5, tau = 1,
+  delta = 1, id = 1, 
+  use.derivatives = 1, 
+  model = "glasso", algorithm = "walktrap", 
+  corr = "cor_auto",
+  ncores = 4
+)
+
+dyn_ega_an_only
+
+plot(dyn_ega_an_only$dynEGA$population)
+plot(dyn_ega_an_only$dynEGA$individual)
+
+eii_an <- ergoInfo(dyn_ega_an_only)
+eii_an
+
+set.seed(123456)
+boot_eii_an <- boot.ergoInfo(
+  dyn_ega_an_only,
+  eii_an,
+  shuffles = 5000,
+  iter = 100,
+  ncores = 4,
+  verbose = TRUE
+)
+
+boot_eii_an
+plot(boot_eii_an)
+```
+
+# empirical ergodicity information index for the AAN group
+```{r EEI aan}
+AAN_data <- all_data_an_clean %>%
+  filter(!ID %in% c("PR020", "PR042"), dx == "AAN")
+
+dyn_ega_aan_only <- dynEGA.ind.pop(
+  data = AAN_data[, -27], # remove dx
+  n.embed = 5, tau = 1,
+  delta = 1, id = 1, 
+  use.derivatives = 1, 
+  model = "glasso", algorithm = "walktrap", 
+  corr = "cor_auto",
+  ncores = 4
+)
+
+dyn_ega_aan_only
+
+plot(dyn_ega_aan_only$dynEGA$population)
+plot(dyn_ega_aan_only$dynEGA$individual)
+
+# Compute empirical ergodicity information index for the group
+eii_aan <- ergoInfo(dyn_ega_aan_only)
+eii_aan
+
+set.seed(123456)
+boot_eii_aan <- boot.ergoInfo(
+  dyn_ega_aan_only,
+  eii_aan,
+  shuffles = 5000,
+  iter = 100,
+  ncores = 4,
+  verbose = TRUE
+)
+
+boot_eii_aan
+plot(boot_eii_aan)
+```
+
