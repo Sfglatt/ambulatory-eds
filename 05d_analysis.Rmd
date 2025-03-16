@@ -1,0 +1,242 @@
+---
+title: "05d_analysis"
+author: "Sglatt"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 6
+    toc_float: true
+    number_sections: true
+    code_folding: show
+    theme: cosmo
+    df_print: paged
+  pdf_document:
+    toc: true
+    toc_depth: '6'
+  word_document:
+    toc: true
+    toc_depth: '6'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r dat, include=FALSE}
+if (!require("tidyverse")) {install.packages("tidyverse"); require("tidyverse")} 
+if (!require("psych")) {install.packages("psych"); require("psych")} 
+if (!require("qgraph")) {install.packages("qgraph"); require("qgraph")} 
+if (!require("graphicalVAR")) {install.packages("graphicalVAR"); require("graphicalVAR")} 
+if (!require("sjmisc")) {install.packages("sjmisc"); require("sjmisc")} 
+if (!require("skimr")) {install.packages("skimr"); require("skimr")} 
+if (!require("devtools")) {install.packages("devtools"); require("devtools")}
+if (!require("Rtools ")) {install.packages("Rtools "); require("Rtools ")}
+devtools::install_github("cecusack/clairecleans")
+library(clairecleans)
+```
+
+# import data
+```{r data}
+dat_import <- read.csv("05d_Output/Created_data/R15_ema.csv") # this is the dataset created in 05d_data *with the column names changed by IV
+
+# remove technical columns (X, date, time) and the anxious EMA item
+dat_import <- dat_import %>%
+  select(-X, -date, -time, -anxious)
+
+# confirm number of participants
+length(unique(dat_import$ID))
+```
+
+# calculate missingness
+```{r mis}
+# For one participant
+per_missing_PR003 <- round(
+  sum(is.na(dat_import[dat_import$ID == "PR003", -c(1:3)])) / 
+  prod(dim(dat_import[dat_import$ID == "PR003", -c(1:3)])) * 100, 2
+)
+
+per_missing_PR003
+
+# Set a loop for all participants
+missing_data_results <- vector("list", length = length(unique(dat_import$ID)))
+
+for (id in unique(dat_import$ID)) {
+  
+  # missingness for each participant
+  per_missing <- round(
+    sum(is.na(dat_import[dat_import$ID == id, -c(1:3)])) / 
+    prod(dim(dat_import[dat_import$ID == id, -c(1:3)])) * 100, 2
+  )
+  
+  
+  missing_data_results[[id]] <- paste0(per_missing, "% missing data ", id)
+}
+
+missing_data_results # Missingness for all participants
+```
+
+# Select the top 4 symptoms with highest means + 2 OCD items for each participant
+```{r item selection}
+dat <- dat_import
+
+# For one participant:
+participant_data <- dat[dat$ID == "PR010", ]
+selected_data <- participant_data[, -c(1:3)]  
+selected_data <- selected_data[, !colnames(selected_data) %in% c("obsession", "compuls")]  
+item_means <- item_sel(selected_data, 4)
+
+item_means
+
+means_describe = describe(dat[,names.means])
+means_describe
+as.data.frame(means_describe)
+
+# Subset to estimate network
+data_means <- dat[,c("day", "beep", "obsession", "compuls", "names.means")] # Make a data frame that only has day, beep, top 4 means, and 2 OCD symptoms
+
+# Do this for each person on a loop 
+result_list <- list()
+
+for (id in unique(dat$ID)) {
+  
+  participant_data <- dat[dat$ID == id, ]
+  
+  selected_data <- participant_data[, -c(1:3)]  
+  selected_data <- selected_data[, !colnames(selected_data) %in% c("obsession", "compuls")]  
+  # Exclude obsession and compulsion since those are being nodes #5 and #6
+  
+  item_means <- item_sel(selected_data, 4)
+  
+  result_list[[id]] <- item_means
+}
+
+result_list
+
+# Do the same as above but make a datset for analysis (for each participant) - the top 4 means, the 2 obsession/compulsion items, day, and beep variables. 
+
+result_list <- list()
+
+for (id in unique(dat$ID)) {
+  
+  participant_data <- dat[dat$ID == id, ]
+  
+  selected_data <- participant_data[, -c(1:3)]  
+  selected_data <- selected_data[, !colnames(selected_data) %in% c("obsession", "compuls")]  
+  
+  item_means <- item_sel(selected_data, 4)
+  
+  names.means <- item_means$topmeans
+  
+  # ^ same as above. Now create the dataset. 
+  participant_dataset <- participant_data[, c("day", "beep", "obsession", "compuls", names.means)]
+  
+  result_list[[id]] <- participant_dataset
+}
+
+result_list[["PR010"]]
+
+# save each participants dataset for the analysis
+for (id in names(result_list)) {
+  
+  participant_dataset <- result_list[[id]]
+  
+  write.csv(participant_dataset, paste0("05d_Output/Analysis_data/", id, "_analysis_data.csv"))
+}
+
+```
+
+```{r networks}
+# Loop through each participant's dataset from the above loop!
+
+# Having gone through this and run all of them, exclude IDs with non-convergence or issues:
+exclude_ids <- c(
+  
+  # "model did NOT converge in inner loop": 
+  "PR085", "PR088", "PR185", "PR246", 
+  # missingness: PR085: 32.84%; PR088: 86.1%; PR185: 81.67%; PR246: 51.2% missing
+  
+  # too little data so doesn't run (i.e., almost all NA)
+  # "No data or all data has been deleted")
+  # PR040: 98% missing; PR120: 96.67%; PR158: 95%; PR159: 100%, PR170: 100%)
+  "PR040", "PR120", "PR158", "PR159", "PR161","PR170",  
+  
+  # model did not converge
+  "PR055", "PR186", "PR247" 
+  # missingness: PR055: 64.44% PR186: 95%; PR247: 88.72%
+  )
+
+for (id in names(result_list)) {
+  if (!(id %in% exclude_ids)) {
+
+  print(paste("For ID", id))
+  
+  participant_dataset <- result_list[[id]]
+  
+  vars = names(participant_dataset)[3:8]
+  
+  # networks for each participant
+  network <- graphicalVAR(participant_dataset, 
+                          vars = vars, 
+                          dayvar = "day", 
+                          beepvar = "beep", 
+                          gamma = 0, 
+                          verbose = FALSE)
+  
+  # Save the plots for each participant
+
+  # PCC plot
+  pdf(paste0("05d_Output/Analysis_output/", id, "_network_PCC.pdf"), height = 5, width = 8)
+  pcc <- plot(network, "PCC",
+              labels = vars, edge.labels = TRUE, layout = "spring", label.cex = 1.3, alpha = '0.05', vsize = 9)
+  dev.off()
+
+  # PDC plot
+  pdf(paste0("05d_Output/Analysis_output/", id, "_network_PDC.pdf"), height = 5, width = 8)
+  pdc <- plot(network, "PDC",
+              labels = vars, label.cex = 1.3, alpha = '0.05', vsize = 9, edge.labels = TRUE, repulsion = 1.5)
+  dev.off()
+
+  # Centrality plot
+  centralityplot <- plot(network, labels = vars, edge.labels = TRUE, layout = "spring") %>% 
+    centralityPlot() +
+    theme(legend.position = "none") +
+    theme(axis.text = element_text(size = 13),
+          strip.text.y = element_text(size = 15),
+          axis.text.x = element_text(angle = 90),
+          strip.text.x = element_text(size = 15))
+  
+  ggsave(centralityplot, filename = paste0("05d_Output/Analysis_output/", id, "_centralityplot.png"))
+  
+  # Centrality tables
+  pcc_cent <- centrality_auto(pcc)[1][[1]]
+  pcc_cent <- pcc_cent$node.centrality
+  pcc_cent <- cbind(rownames(pcc_cent), pcc_cent)
+  pcc_cent <- pcc_cent %>% mutate(type = "PCC") %>% relocate(type)
+  names(pcc_cent)[2] <- "nodes"
+
+  pdc_cent <- centrality_auto(pdc)[1][[1]]
+  pdc_cent <- pdc_cent$node.centrality
+  pdc_cent <- cbind(rownames(pdc_cent), pdc_cent)
+  pdc_cent <- pdc_cent %>% mutate(type = "PDC") %>% relocate(type)
+  names(pdc_cent)[2] <- "nodes"
+  
+  centr <- plyr::rbind.fill(pcc_cent, pdc_cent)
+  write.csv(centr, paste0("05d_Output/Analysis_output/", id, "_centralitytables.csv"), row.names = FALSE)
+  
+  # Get the edge tables
+  # Contemporaneous edges (PCC)
+  pcc_edges <- data.frame(pcc[[1]][[1]])
+  write.csv(pcc_edges, paste0("05d_Output/Analysis_output/", id, "_pcc_edges.csv"), row.names = TRUE)
+  
+  # Temporal edges (PDC)
+  pdc_edges <- data.frame(pdc[[1]][[1]])
+  write.csv(pdc_edges, paste0("05d_Output/Analysis_output/", id, "_pdc_edges.csv"), row.names = TRUE)
+  
+  # Save workspace image 
+  save.image(file = paste0("05d_Output/Analysis_output/", id, "_network_analysis.RData"))
+  }
+}
+```
+
+
