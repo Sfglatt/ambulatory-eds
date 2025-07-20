@@ -1,0 +1,322 @@
+---
+title: "06_init"
+author: "Sglatt"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Idiographic networks & invariance for 2 participants with Anorexia Nervosa
+
+```{r packages}
+if (!require("devtools")) {
+  install.packages("devtools")
+  require("devtools")
+}
+devtools::install_github("cecusack/clairecleans")
+if (!require("dplyr")) {
+  install.packages("dplyr")
+  require("dplyr")
+}
+if (!require("ggplot2")) {
+  install.packages("ggplot2")
+  require("ggplot2")
+}
+if (!require("graphicalVAR")) {
+  install.packages("graphicalVAR")
+  require("graphicalVAR")
+}
+if (!require("gridExtra")) {
+  install.packages("gridExtra")
+  require("gridExtra")
+}
+if (!require("huge")) {
+  install.packages("huge")
+  require("huge")
+}
+if (!require("imputeTS")) {
+  install.packages("imputeTS")
+  require("imputeTS")
+}
+if (!require("knitr")) {
+  install.packages("knitr")
+  require("knitr")
+}
+if (!require("moments")) {
+  install.packages("moments")
+  require("moments")
+}
+if (!require("qgraph")) {
+  install.packages("qgraph")
+  require("qgraph")
+}
+if (!require("reshape2")) {
+  install.packages("reshape2")
+  require("reshape2")
+}
+if (!require("remotes")) {
+  install.packages("remotes")
+  require("remotes")
+}
+remotes::install_github("RiaHoekstra/INIT")
+library("INIT")
+if (!require("sjmisc")) {
+  install.packages("sjmisc")
+  require("sjmisc")
+}
+if (!require("tseries")) {
+  install.packages("tseries")
+  require("tseries")
+}
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Import data
+```{r data}
+# Two participants with AN; datasets created from script 01
+PR042_df <- read.csv("Created_data/PR042/PR042_rawwithtime2024-06-16.csv")
+PR020_df <- read.csv("Created_data/PR020/PR020_rawwithtime2024-05-29.csv")
+
+PR042_subset <- PR042_df[, c(
+  1, 5, 7, 8,
+  11, 18, 22, 37, 38, 19
+)]
+PR020_subset <- PR020_df[, c(
+  1, 5, 7, 8,
+  11, 18, 22, 37, 38, 19
+)]
+
+sum(is.na(PR042_subset[-c(1:4)])) / prod(dim(PR042_subset[-c(1:4)])) # 2.4% missing
+sum(is.na(PR020_subset[-c(1:4)])) / prod(dim(PR020_subset[-c(1:4)])) # 4.3% missing
+```
+
+# Impute data 
+```{r imputation}
+PR042_transformed <- na_kalman(PR042_subset[-c(1:4)])
+PR020_transformed <- na_kalman(PR020_subset[-c(1:4)])
+
+PR042_subset <- cbind(PR042_subset[, 1:4], PR042_transformed)
+PR020_subset <- cbind(PR020_subset[, 1:4], PR020_transformed)
+
+sum(is.na(PR042_subset[-c(1:4)])) / prod(dim(PR042_subset[-c(1:4)]))
+sum(is.na(PR020_subset[-c(1:4)])) / prod(dim(PR020_subset[-c(1:4)]))
+```
+
+# Normality
+```{r normality}
+(skew_PR042 <- sapply(
+  PR042_subset[, (ncol(PR042_subset) - 5):ncol(PR042_subset)],
+  function(x) skewness(x, na.rm = TRUE)
+))
+(kurt_PR042 <- sapply(
+  PR042_subset[, (ncol(PR042_subset) - 5):ncol(PR042_subset)],
+  function(x) kurtosis(x, na.rm = TRUE)
+))
+# 2, 3
+(skew_PR020 <- sapply(
+  PR020_subset[, (ncol(PR020_subset) - 5):ncol(PR020_subset)],
+  function(x) skewness(x, na.rm = TRUE)
+))
+# 2, 6
+(kurt_PR020 <- sapply(
+  PR020_subset[, (ncol(PR020_subset) - 5):ncol(PR020_subset)],
+  function(x) kurtosis(x, na.rm = TRUE)
+))
+# 2, 3, 6
+
+# Transform non-normal data with a nonparanormal copula transformation
+# Previous research shows that this transformation works well for heavily skewed data in symptom networks (Isvoranu & Epskamp, preprint; van der Tuin, S., Hoekstra, R. H. A., Booij, S. H., Oldehinkel, A. J., Wardenaar, K. J., van den Berg, D., Borsboom, D., & Wigman, J. T. W. (2023). Relating stability of individual dynamical networks to change in psychopathology. PloS one, 18(11), e0293200. https://doi.org/10.1371/journal.pone.0293200)
+
+selected_data <- PR042_subset[, c("restrict", "mistakes")]
+npn_results <- huge.npn(as.matrix(selected_data), npn.func = "shrinkage", verbose = TRUE)
+PR042_subset[, c("restrict", "mistakes")] <- npn_results
+
+selected_data <- PR020_subset[, c("restrict", "mistakes", "desirethin")]
+npn_results <- huge.npn(as.matrix(selected_data), npn.func = "shrinkage", verbose = TRUE)
+PR020_subset[, c("restrict", "mistakes", "desirethin")] <- npn_results
+
+# Check one
+skewness(PR020_df$restrict, na.rm = TRUE) # 6.9
+skewness(PR020_subset$restrict, na.rm = TRUE) # 3.4
+```
+
+# Stationarity
+```{r stationarity}
+# Simulation studies show no difference between detrending all variables versus a specific variable if any trend is present, so all variables were detrended for consistency; Epskamp, S., van Borkulo, C. D., van der Veen, D. C., Servaas, M. N., Isvoranu, A. M., Riese, H., & Cramer, A. O. (2018). Personalized network modeling in psychopathology: The importance of contemporaneous and temporal connections. Clinical Psychological Science, 6(3), 416-427.
+
+# The assumption with KPSS here is no unit root (not stationary), < .05 indicates stationarity
+
+# PR042
+vars <- names(PR042_subset)[(ncol(PR042_subset) - 5):ncol(PR042_subset)]
+(kpss_PR042 <- clairecleans::kpss_df(PR042_subset, vars))
+
+dat <- PR042_subset[, (ncol(PR042_subset) - 5):ncol(PR042_subset)]
+
+dedat <- matrix(ncol = ncol(dat), nrow = nrow(dat))
+colnames(dedat) <- colnames(dat)
+
+for (i in 1:ncol(dedat)) {
+  dedat[, i] <- resid(lm(scale(dat[, i]) ~ PR042_subset$cumsumT, na.action = na.exclude))
+}
+
+PR042_subset_detrend <- bind_cols(PR042_subset[, c(1, 3, 4)], as.data.frame(dedat))
+
+# PR020
+vars <- names(PR020_subset)[(ncol(PR020_subset) - 5):ncol(PR020_subset)]
+(kpss_PR020 <- clairecleans::kpss_df(PR020_subset, vars))
+
+dat <- PR020_subset[, (ncol(PR020_subset) - 5):ncol(PR020_subset)]
+
+dedat <- matrix(ncol = ncol(dat), nrow = nrow(dat))
+colnames(dedat) <- colnames(dat)
+
+for (i in 1:ncol(dedat)) {
+  dedat[, i] <- resid(lm(scale(dat[, i]) ~ PR020_subset$cumsumT, na.action = na.exclude))
+}
+
+PR020_subset_detrend <- bind_cols(PR020_subset[, c(1, 3, 4)], as.data.frame(dedat))
+```
+
+# Idiographic networks
+```{r GVAR unreg}
+p20_detrended_network <- graphicalVAR(PR020_subset_detrend,
+  vars = vars,
+  beepvar = "beepvar",
+  dayvar = "dayvar",
+  idvar = "ID",
+  gamma = 0,
+  lambda_beta = 0,
+  lambda_kappa = 0,
+  verbose = TRUE
+)
+
+p42_detrended_network <- graphicalVAR(PR042_subset_detrend,
+  vars = vars,
+  beepvar = "beepvar",
+  dayvar = "dayvar",
+  idvar = "ID",
+  gamma = 0,
+  lambda_beta = 0,
+  lambda_kappa = 0,
+  verbose = TRUE
+)
+```
+
+# Visualize idiographic networks
+```{r GVAR vis}
+layout <- matrix(
+  c(
+    -0.35, 1.00,
+    0.52, 1.00,
+    0.47, -1.00,
+    -0.80, 0.00,
+    -0.37, -1.00,
+    0.90, 0.00
+  ),
+  nrow = 6, ncol = 2, byrow = TRUE
+)
+
+labelsObject <- c("fowg", "restrict", "mistakes", "feelfat", "tired", "desirethin")
+
+p42_temporal <- qgraph(p42_detrended_network$PDC,
+  mar = rep(12, 4),
+  title = "\n\nPatient 42: Temporal",
+  title.cex = 1.1,
+  layout = layout,
+  theme = "colorblind",
+  diag = TRUE,
+  nodeNames = labelsObject,
+  labels = labelsObject,
+  label.scale.equal = TRUE,
+  legend = FALSE
+)
+
+p42_contemporaneous <- qgraph(p42_detrended_network$PCC,
+  mar = rep(12, 4),
+  title = "\n\nPatient 42: Contemporaneous",
+  title.cex = 1.1,
+  layout = layout,
+  theme = "colorblind",
+  diag = TRUE,
+  nodeNames = labelsObject,
+  labels = labelsObject,
+  label.scale.equal = TRUE,
+  legend = FALSE
+)
+
+p20_temporal <- qgraph(p20_detrended_network$PDC,
+  mar = rep(12, 4),
+  title = "\n\nPatient 20: Temporal",
+  title.cex = 1.1,
+  layout = layout,
+  theme = "colorblind",
+  diag = TRUE,
+  nodeNames = labelsObject,
+  labels = labelsObject,
+  label.scale.equal = TRUE,
+  legend = FALSE
+)
+
+p20_contemporaneous <- qgraph(p20_detrended_network$PCC,
+  mar = rep(12, 4),
+  title = "\n\nPatient 20: Contemporaneous",
+  title.cex = 1.1,
+  layout = layout,
+  theme = "colorblind",
+  diag = TRUE,
+  nodeNames = labelsObject,
+  labels = labelsObject,
+  label.scale.equal = TRUE,
+  legend = FALSE
+)
+```
+
+# Idiographic network invariance
+```{r Network invariance}
+# Combine data
+combined_long <- rbind(PR042_subset_detrend, PR020_subset_detrend)
+
+# Create a model with parameters freely estimated (heterogeneous)
+mod_het <- psychonetrics::gvar(combined_long,
+  vars = vars,
+  beepvar = "beepvar",
+  dayvar = "dayvar",
+  groups = "ID",
+  estimator = "FIML",
+  verbose = TRUE
+)
+
+mod_het <- mod_het %>% psychonetrics::runmodel()
+
+# Constrain parameters to be equal (homogeneity)
+mod_hom <- mod_het %>%
+  psychonetrics::groupequal("omega_zeta") %>%
+  psychonetrics::groupequal("beta") %>%
+  psychonetrics::runmodel()
+
+# Compare equal (homogeneous) to freely estimated (heterogeneous)
+psychonetrics::compare(Different = mod_het, Equal = mod_hom) # Different has lower AIC, equal has lower BIC
+
+# Simulation studies identify AIC as the most sensitive to the presence (or absence) of differences between networks; low AIC =  best fitting among ‘no difference’ (homogeneous) versus difference (heterogeneous) models.
+```
+
+# INIT (yields same as above)
+```{r INIT}
+str(combined_long)
+(res <- INIT(
+  data = combined_long,
+  idvar = "ID",
+  dayvar = "dayvar",
+  beepvar = "beepvar",
+  estimator = "FIML",
+  network_type = "saturated",
+  vars = vars,
+  save_models = TRUE
+))
+
+str(res)
+res$network$contemporaneous$PR042
+```
+

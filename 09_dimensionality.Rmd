@@ -1,5 +1,5 @@
 ---
-title: "05c_pres_analysis"
+title: "09_dimensionality"
 author: "Sglatt"
 date: "`r Sys.Date()`"
 output: html_document
@@ -11,12 +11,30 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r packages}
-if (!require("dplyr")) {install.packages("dplyr"); require("dplyr")} 
-if (!require("EGAnet")) {install.packages("EGAnet"); require("EGAnet")} 
-if (!require("readr")) {install.packages("readr"); require("readr")} 
-if (!require("psych")) {install.packages("psych"); require("psych")} 
-if (!require("purrr")) {install.packages("purrr"); require("purrr")} 
-if (!require("stringr")) {install.packages("stringr"); require("stringr")} 
+if (!require("dplyr")) {
+  install.packages("dplyr")
+  require("dplyr")
+}
+if (!require("EGAnet")) {
+  install.packages("EGAnet")
+  require("EGAnet")
+}
+if (!require("readr")) {
+  install.packages("readr")
+  require("readr")
+}
+if (!require("psych")) {
+  install.packages("psych")
+  require("psych")
+}
+if (!require("purrr")) {
+  install.packages("purrr")
+  require("purrr")
+}
+if (!require("stringr")) {
+  install.packages("stringr")
+  require("stringr")
+}
 ```
 
 # Pull imputed data from 31 participants with < 50% raw data missing and combine into a single dataset
@@ -30,8 +48,8 @@ exclude_folders <- c("PR104", "PR089", "PR086", "PR084", "PR082", "PR079", "PR07
 folders_to_include <- folders[!basename(folders) %in% exclude_folders]
 
 get_files <- function(folder) {
-  pr_name <- basename(folder) 
-  pattern <- paste0("^", pr_name, "_imputed_rawwithtime.*\\.csv$")  
+  pr_name <- basename(folder)
+  pattern <- paste0("^", pr_name, "_imputed_rawwithtime.*\\.csv$")
   list.files(folder, pattern = pattern, full.names = TRUE)
 }
 
@@ -45,16 +63,16 @@ colnames(all_data)
 # Merge in dx column from demographics spreadsheet
 demos <- read.csv("Raw_data/Demographics.csv")
 
-all_data <- all_data %>% 
+all_data <- all_data %>%
   left_join(demos %>% select(ID, dx), by = "ID")
 
 # look at dx breakdown
 dx_totals <- all_data %>%
   group_by(ID) %>%
-  slice(1) %>%  
-  count(dx) %>%  
+  slice(1) %>%
+  count(dx) %>%
   ungroup() %>%
-  count(dx)  
+  count(dx)
 
 dx_totals
 
@@ -66,8 +84,9 @@ all_data_an <- all_data %>%
 # remove variables for analysis
 ```{r data vars}
 # Unique variable analysis
-all_data_an_uva  <- UVA(
-  data = all_data_an[, -c(1:9, 72)])
+all_data_an_uva <- UVA(
+  data = all_data_an[, -c(1:9, 72)]
+)
 
 all_data_an_uva
 all_data_an_uva$keep_remove
@@ -76,13 +95,15 @@ describe(all_data_an[, -c(1:9, 72)]) # aggregated across people
 
 # Remove items
 all_data_an_clean <- all_data_an %>%
-  select(-fowg, -badperson, -bodydiss, -shame, -thought_death, -laxdiur, # Remove per UVA
-         
-         -badperson, -worthless, -thought_death, -vomit, -binge, -intrus_thought, -food_intrus, -sad,
-         -selfharm, -drink_public, -heartrace, -rumination, -avoid_sit, -physsens_eat, -ridthoughts, 
-         -chewspit, -memories, # remove because low endorsed.
-         -intrus_thought, -scared, -impulse, -compulsion, -socialanx, -eat_public, -agitated, -sleep, -tired,
-         -anxiety, -si, relax, -stress, -saa, -emo_overwhelm, -worryoverwhelm, -sens_body, -physsens)
+  select(
+    -fowg, -badperson, -bodydiss, -shame, -thought_death, -laxdiur, # Remove per UVA
+
+    -badperson, -worthless, -thought_death, -vomit, -binge, -intrus_thought, -food_intrus, -sad,
+    -selfharm, -drink_public, -heartrace, -rumination, -avoid_sit, -physsens_eat, -ridthoughts,
+    -chewspit, -memories, # remove because low endorsed.
+    -intrus_thought, -scared, -impulse, -compulsion, -socialanx, -eat_public, -agitated, -sleep, -tired,
+    -anxiety, -si, relax, -stress, -saa, -emo_overwhelm, -worryoverwhelm, -sens_body, -physsens
+  )
 
 colnames(all_data_an_clean)
 
@@ -90,7 +111,7 @@ colnames(all_data_an_clean)
 all_data_an_clean <- all_data_an_clean %>%
   select(-c(2:9))
 
-describe(all_data_an_clean[, -1]) 
+describe(all_data_an_clean[, -1])
 ```
 
 # dynamic EGA; 
@@ -103,10 +124,10 @@ parallel::detectCores()
 (dyn_ega_d1 <- dynEGA(
   data = all_data_an_clean %>% filter(!ID %in% c("PR020", "PR042")), # need to remove on account of non-moving time d's
   n.embed = 5, tau = 1,
-  delta = 1, id = 1, group = "dx", 
-  use.derivatives = 1, 
+  delta = 1, id = 1, group = "dx",
+  use.derivatives = 1,
   level = c("population", "group", "individual"),
-  model = "glasso", algorithm = "walktrap", 
+  model = "glasso", algorithm = "walktrap",
   corr = "cor_auto",
   ncores = 4
 ))
@@ -130,15 +151,15 @@ plot(dyn_ega_d1$dynEGA$individual)
 plot(dyn_ega_d1$dynEGA$individual, id = "PR003")
 
 # save images
-pdf("05c_Output/dynamic_ega_pop.pdf", width = 7, height = 7)
+pdf("09_Output/dynamic_ega_pop.pdf", width = 7, height = 7)
 plot(dyn_ega_d1$dynEGA$population)
 dev.off()
 
-pdf("05c_Output/dynamic_ega_group.pdf", width = 14, height = 7)
+pdf("09_Output/dynamic_ega_group.pdf", width = 14, height = 7)
 plot(dyn_ega_d1$dynEGA$group)
 dev.off()
 
-pdf("05c_Output/dynamic_ega_individual.pdf", width = 14, height = 14)
+pdf("09_Output/dynamic_ega_individual.pdf", width = 14, height = 14)
 plot(dyn_ega_d1$dynEGA$individual)
 dev.off()
 ```
@@ -152,11 +173,11 @@ all_data_an_clean_2 <- all_data_an_clean %>%
   select(-27)
 
 dyn_ega_d1_2 <- dynEGA.ind.pop(
-  data = all_data_an_clean_2 %>% filter(!ID %in% c("PR020", "PR042")), 
+  data = all_data_an_clean_2 %>% filter(!ID %in% c("PR020", "PR042")),
   n.embed = 5, tau = 1,
-  delta = 1, id = 1, 
-  use.derivatives = 1, 
-  model = "glasso", algorithm = "walktrap", 
+  delta = 1, id = 1,
+  use.derivatives = 1,
+  model = "glasso", algorithm = "walktrap",
   corr = "cor_auto",
   ncores = 4
 )
@@ -194,9 +215,9 @@ AN_data <- all_data_an_clean %>%
 dyn_ega_an_only <- dynEGA.ind.pop(
   data = AN_data[, -27],
   n.embed = 5, tau = 1,
-  delta = 1, id = 1, 
-  use.derivatives = 1, 
-  model = "glasso", algorithm = "walktrap", 
+  delta = 1, id = 1,
+  use.derivatives = 1,
+  model = "glasso", algorithm = "walktrap",
   corr = "cor_auto",
   ncores = 4
 )
@@ -231,9 +252,9 @@ AAN_data <- all_data_an_clean %>%
 dyn_ega_aan_only <- dynEGA.ind.pop(
   data = AAN_data[, -27], # remove dx
   n.embed = 5, tau = 1,
-  delta = 1, id = 1, 
-  use.derivatives = 1, 
-  model = "glasso", algorithm = "walktrap", 
+  delta = 1, id = 1,
+  use.derivatives = 1,
+  model = "glasso", algorithm = "walktrap",
   corr = "cor_auto",
   ncores = 4
 )

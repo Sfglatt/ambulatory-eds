@@ -1,0 +1,463 @@
+---
+title: "07_ct"
+author: "Sglatt"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packates}
+if (!require("ctsem")) {
+  install.packages("ctsem")
+  require("ctsem")
+}
+if (!require("ctnet")) {
+  install.packages("ctnet")
+  require("ctnet")
+}
+if (!require("dplyr")) {
+  install.packages("dplyr")
+  require("dplyr")
+}
+if (!require("expm")) {
+  install.packages("expm")
+  require("expm")
+}
+if (!require("ggplot2")) {
+  install.packages("ggplot2")
+  require("ggplot2")
+}
+if (!require("qgraph")) {
+  install.packages("qgraph")
+  require("qgraph")
+}
+if (!require("RColorBrewer")) {
+  install.packages("RColorBrewer")
+  require("RColorBrewer")
+}
+if (!require("Rtools")) {
+  install.packages("Rtools")
+  require("Rtools")
+}
+if (!require("scales")) {
+  install.packages("scales")
+  require("scales")
+}
+if (!require("tibble")) {
+  install.packages("tibble")
+  require("tibble")
+}
+```
+
+# data
+```{r data}
+group_dat <- read.csv("05d_Output/Created_data/EMA_2025_03_05.csv")
+head(group_dat)
+
+group_dat <- group_dat %>%
+  filter(!is.na(Participant.Label))
+head(group_dat)
+
+head(group_dat$Session.Scheduled.Time)
+
+group_dat$New_time <- as.POSIXct(group_dat$Session.Scheduled.Time, format = "%Y-%m-%d %H:%M:%OS")
+
+group_dat_filtered <- group_dat %>%
+  group_by(Participant.Label) %>%
+  mutate(time_hours = as.numeric(difftime(New_time, min(New_time), units = "hours")))
+
+head(group_dat_filtered)
+
+# I feel dissatisfied with my weight or shape (7)
+# I have been consciously trying to restrict my food intake to influence my shape or weight (13)
+# I am having the urge to restrict (66)
+# I feel stressed (67)
+
+group_dat_filtered_vars <- group_dat_filtered %>%
+  select(
+    Participant.Label,
+    time_hours,
+    X.7_VAS..Question.7.of.Survey,
+    X.13_VAS..Question.13.of.Survey,
+    X.66_VAS..Question.66.of.Survey,
+    X.67_VAS..Question.67.of.Survey
+  )
+
+head(group_dat_filtered_vars)
+
+group_dat_filtered_vars <- group_dat_filtered_vars %>%
+  rename(
+    id = Participant.Label, # required name conv. for model
+    time = time_hours, # required name conv. for model
+    WTS = X.7_VAS..Question.7.of.Survey,
+    Restrict = X.13_VAS..Question.13.of.Survey,
+    Urestrict = X.66_VAS..Question.66.of.Survey,
+    Stress = X.67_VAS..Question.67.of.Survey
+  )
+
+class(group_dat_filtered_vars$id)
+class(group_dat_filtered_vars$time)
+
+# group_dat_filtered_vars <- group_dat_filtered_vars %>% arrange(id, time)
+# View(group_dat_filtered_vars)
+```
+
+```{r ct model}
+set.seed(123456)
+
+lab <- c("WTS", "RS", "UR", "ST")
+p <- 4
+
+# Continuous time model
+ctmodel <- ctModel(
+  type = "stanct",
+  manifestNames = c(
+    "WTS",
+    "Restrict",
+    "Urestrict",
+    "Stress"
+  ),
+  latentNames = paste0(lab, "_l"),
+  LAMBDA = diag(nrow = p),
+  DRIFT = "auto",
+  MANIFESTMEANS = matrix(data = 0, nrow = p, ncol = 1),
+  MANIFESTVAR = diag(0, p),
+  CINT = "auto",
+  DIFFUSION = "auto"
+)
+
+ctmodel
+
+ctfit <- ctStanFit(group_dat_filtered_vars, ctmodel, optimize = TRUE, cores = 4)
+
+summary(ctfit)
+plot(ctfit, types = "all", wait = FALSE)
+
+
+# drift matrix parameters
+getdrift <- function(sumobj, mode = "CT", byrow = TRUE) {
+  ind <- which(sumobj$parmatrices$matrix == "DRIFT")
+  p <- sqrt((ind[length(ind)] - ind[1]) + 1)
+  drift_df <- sumobj$parmatrices[ind, ]
+  drift <- matrix(drift_df[, "Mean"], p, p, byrow = byrow)
+  lower <- matrix(drift_df[, "2.5%"], p, p, byrow = byrow)
+  upper <- matrix(drift_df[, "97.5%"], p, p, byrow = byrow)
+  drift_sig <- drift
+  drift_sig[!(sign(lower) == sign(upper))] <- 0
+
+  if (mode == "CT") {
+    out <- tibble::lst(drift_df, drift, lower, upper, drift_sig)
+  }
+  if (mode == "DT") {
+    out <- list(phi_df = drift_df, phi = drift, lower, upper, phi_sig = drift_sig)
+  }
+  return(out)
+}
+
+# Model parameters
+ctres <- getdrift(summary(ctfit))
+
+# Parameter matrix
+drift <- ctres$drift
+
+# 95% CIs
+ctres$drift <- round(ctres$drift, 4)
+ctres$lower <- round(ctres$lower, 4)
+ctres$upper <- round(ctres$upper, 4)
+
+cmat <- matrix(as.character(ctres$drift), 4, 4)
+
+for (i in 1:4) {
+  cmat[i, ] <- paste0(cmat[i, ], " (", ctres$lower[i, ], ", ", ctres$upper[i, ], ")")
+}
+
+dimnames(cmat) <- list(lab, lab)
+cmat
+```
+
+```{r drift matrix figure}
+# Local dependency network of ED symptoms corresponding to the drift matrix parameters
+
+netplot <- function(mat, greyscale = TRUE, maximum = .5, asize = 6, edge.labels = TRUE,
+                    edge.label.cex = 2, fade = FALSE, shape = "circle",
+                    labels = TRUE,
+                    vsize = 20,
+                    esize = 12) {
+  layout <- rbind(
+    c(0, 1),
+    c(1, 1),
+    c(1, 0),
+    c(0, 0)
+  )
+
+  if (isTRUE(labels)) {
+    labels <- c("X1", "X2", "X3", "X4")
+  }
+
+  m_lty <- matrix(1, 4, 4)
+  m_lty[mat < 0] <- 2
+
+  m_col <- matrix("blue", 4, 4)
+  m_col[mat > 0] <- "firebrick2"
+  if (greyscale) {
+    qgraph::qgraph(t(mat),
+      layout = layout,
+      directed = T,
+      edge.color = "darkgrey",
+      edge.labels = edge.labels,
+      edge.label.cex = edge.label.cex,
+      edge.label.color = "darkgrey",
+      # curved = FALSE,
+      lty = t(m_lty),
+      vsize = vsize,
+      esize = esize,
+      asize = asize,
+      # color = cols,
+      mar = c(8, 10, 8, 8), maximum = maximum,
+      fade = fade,
+      shape = shape,
+      maximum = maximum,
+      labels = labels
+    )
+  } else {
+    qgraph::qgraph(t(mat),
+      edge.color = t(m_col),
+      layout = layout,
+      directed = T,
+      edge.labels = edge.labels,
+      edge.label.cex = edge.label.cex,
+      # curved = FALSE,
+      lty = t(m_lty),
+      vsize = 20,
+      esize = 12,
+      asize = asize,
+      # color = cols,
+      mar = c(8, 10, 8, 8), maximum = maximum,
+      fade = fade,
+      shape = shape,
+      maximum = maximum,
+      labels = labels
+    )
+  }
+}
+
+netplot(drift, labels = lab, shape = "circle")
+
+pdf("07_Output/CTnet_emp.pdf", width = 8, height = 8)
+netplot(drift, labels = lab, shape = "circle")
+dev.off()
+```
+
+```{r effects figure}
+# Auto-effects and cross-effects
+post <- ctsem::ctExtract(ctfit)
+post_drift <- post$pop_DRIFT
+
+dts <- seq(0, 24, 0.1)
+
+# Extract CIs across time
+getCIs <- function(posterior, simplify = TRUE, probs = c(.025, .5, .975), const = 1, FUN, ...) {
+  samps <- dim(posterior)[1]
+  po <- sapply(1:samps, function(s) {
+    FUN(posterior[s, , ] * const, ...)
+  }, simplify = simplify)
+  if (!is.null(nrow(po))) {
+    out <- apply(po, 1, stats::quantile, probs = probs)
+  } else {
+    out <- stats::quantile(po, probs = probs)
+  }
+  out
+}
+
+plotPhi <-
+  function(drift = NULL,
+           posterior = NULL,
+           CI_obj = NULL,
+           dts = seq(0, 24, 0.1),
+           plot = TRUE,
+           index = "all",
+           colvec = NULL,
+           leg = TRUE,
+           lwd_main = 3) {
+    if (is.null(CI_obj)) {
+      if (is.null(drift) &
+        is.null(posterior)) {
+        stop("need to input CI_obj or a drift matrix and/or posterior object")
+      }
+      CI_obj <- sapply(dts, function(dt) {
+        getCIs(posterior,
+          simplify = TRUE,
+          FUN = expm::expm,
+          const = dt
+        )
+      }, simplify = "array")
+    }
+
+    if (plot == FALSE) {
+      return(CI_obj)
+    } else {
+      p <- sqrt(dim(CI_obj)[2])
+
+
+      if (is.matrix(index) ||
+        is.data.frame(index)) {
+        m <- index
+      } else {
+        if (index == "all") {
+          m <- expand.grid(1:p, 1:p)
+        }
+        if (index == "AR") {
+          m <- cbind(1:p, 1:p)
+        }
+        if (index == "CL") {
+          m <- expand.grid(1:p, 1:p)[-seq(1, p^2, p + 1), ]
+        }
+      }
+
+      mcomp <- cbind(expand.grid(1:p, 1:p)[, c(1, 2)], 1:p^2)
+
+      ind <- rep(NA, nrow(m))
+      for (i in 1:nrow(m)) {
+        for (j in 1:nrow(mcomp)) {
+          if (all(m[i, c(1, 2)] == mcomp[j, c(1, 2)])) {
+            ind[i] <- mcomp[j, 3]
+          } else {
+            next
+          }
+        }
+      }
+
+      # finally plot
+      ylim <- c(-1.0, 1.0)
+
+      plot.new()
+      plot.window(xlim = c(dts[1], max(dts)), ylim = ylim)
+      axis(1, at = seq(0, 24, by = 2))
+      axis(2, at = seq(-1.0, 1.0, by = 0.2))
+      title(
+        main = "Auto-regressive Parameters",
+        xlab = "Time-Interval (In Hours)",
+        ylab = "Effect Size"
+      )
+      abline(h = 0, col = "grey")
+
+
+      for (i in 1:length(ind)) {
+        lines(dts, CI_obj[2, ind[i], ], col = colvec[i], lwd = lwd_main)
+
+        # Extract RGB values from the main color
+        col_rgb <- col2rgb(colvec[i]) / 255
+
+        # Define a faded color using alpha transparency
+        faded_col <- rgb(col_rgb[1], col_rgb[2], col_rgb[3], alpha = 0.2)
+
+
+        lines(dts, CI_obj[1, ind[i], ], col = faded_col, lty = "twodash")
+        lines(dts, CI_obj[3, ind[i], ], col = faded_col, lty = "twodash")
+      }
+
+
+      legtext <- c("WTS --> WTS", "RS --> RS", "UR --> UR", "ST --> ST")
+
+      if (leg == TRUE) {
+        legend(
+          "topright",
+          legend = as.expression(legtext),
+          lty = 1,
+          col = colvec,
+          cex = 1,
+          xpd = TRUE,
+          bty = "n"
+        )
+      }
+    }
+  }
+
+# CIs
+phidt_CI <- sapply(dts, function(dt) {
+  getCIs(post_drift,
+    simplify = TRUE, FUN = expm::expm,
+    const = dt
+  )
+}, simplify = "array")
+
+# Index pairs: (1, 1), (2, 2), (3, 3), and (4, 4)
+index_mat <- matrix(
+  c(
+    1, 1,
+    2, 2,
+    3, 3,
+    4, 4
+  ),
+  nrow = 4, ncol = 2, byrow = TRUE
+)
+
+col_vec <- c("#777889", "royalblue", "forestgreen", "#FF1493")
+
+plotPhi(CI_obj = phidt_CI, dts = dts, index = index_mat, colvec = col_vec, leg = TRUE)
+```
+```{r IRF figure 1}
+# Impulse response function figure all Ds
+
+IRFfun <- function(drift, start) {
+  expm::expm(drift) %*% start
+}
+
+
+RF_CI <- sapply(dts, function(dt) {
+  getCIs(post_drift,
+    simplify = TRUE,
+    FUN = IRFfun,
+    const = dt,
+    start = c(1, -1, -1, 0)
+  )
+}, simplify = "array")
+
+ind <- c(1, 2, 3, 4)
+ylim <- c(min(RF_CI[, ind, ]), max(RF_CI[, ind, ]))
+colvec2 <- c("#777889", "royalblue", "forestgreen", "#FF1493")
+
+
+pdf("07_Output/popIRF_full.pdf")
+poly <- TRUE
+
+par(cex.axis = 1.5, cex.lab = 1.5)
+plot.new()
+plot.window(xlim = c(dts[1], max(dts)), ylim = ylim)
+
+for (i in 1:length(ind)) {
+  lines(dts, RF_CI[2, ind[i], ], col = colvec2[i], lwd = 2)
+  lines(dts, RF_CI[1, ind[i], ], col = alpha(colvec2[i], .2), lty = "twodash", lwd = 1)
+  lines(dts, RF_CI[3, ind[i], ], col = alpha(colvec2[i], .2), lty = "twodash", lwd = 1)
+}
+
+
+abline(h = 0, col = "black")
+points(dts[1], RF_CI[2, 1, 1], pch = 18, cex = 3, col = "#777889")
+points(dts[1], RF_CI[2, 2, 1], pch = 18, cex = 3, col = "royalblue")
+points(dts[1], RF_CI[2, 3, 1], pch = 18, cex = 3, col = "forestgreen")
+points(dts[1], RF_CI[2, 4, 1], pch = 18, cex = 3, col = "#FF1493")
+
+axis(1, at = c(0, seq(2, 24, 2)))
+axis(2)
+title(main = "", xlab = "Time", ylab = "Process Value")
+
+# Legend
+legend(
+  "topright",
+  col = c(colvec2, "gray"),
+  lty = c(1, 1, 1, 1, NA),
+  pch = c(NA, NA, NA, NA, 18),
+  legend = c("WTS", "Restrict", "Urestrict", "Stress"),
+  xpd = T,
+  bty = "n",
+  cex = 1,
+  pt.cex = 3
+)
+dev.off()
+```
+
+

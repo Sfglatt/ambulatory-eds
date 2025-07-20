@@ -1,5 +1,5 @@
 ---
-title: "05d_data_processing"
+title: "08_data"
 author: "Sglatt"
 date: "`r Sys.Date()`"
 output: html_document
@@ -10,23 +10,35 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r packages}
-if (!require("dplyr")) {install.packages("dplyr"); require("dplyr")} 
-if (!require("lubridate")) {install.packages("lubridate"); require("lubridate")}
-if (!require("purrr")) {install.packages("purrr"); require("purrr")}
-if (!require("tidyr")) {install.packages("tidyr"); require("tidyr")} 
+if (!require("dplyr")) {
+  install.packages("dplyr")
+  require("dplyr")
+}
+if (!require("lubridate")) {
+  install.packages("lubridate")
+  require("lubridate")
+}
+if (!require("purrr")) {
+  install.packages("purrr")
+  require("purrr")
+}
+if (!require("tidyr")) {
+  install.packages("tidyr")
+  require("tidyr")
+}
 ```
 
 # EMA data
 ```{r EMA}
-setwd("Raw_data\\05d_raw_data\\Raw_EMA")
+setwd("Raw_data\\08_raw_data\\Raw_EMA")
 
 # import the data
-morn_import <- read.csv(dir(pattern='.csv$')[1], na.strings = c("", " "))
-dim(morn_import) 
-aft_import <- read.csv(dir(pattern='.csv$')[2], na.strings = c("", " "))
-dim(aft_import)  
-eve_import <- read.csv(dir(pattern='.csv$')[3], na.strings = c("", " "))
-dim(eve_import)  
+morn_import <- read.csv(dir(pattern = ".csv$")[1], na.strings = c("", " "))
+dim(morn_import)
+aft_import <- read.csv(dir(pattern = ".csv$")[2], na.strings = c("", " "))
+dim(aft_import)
+eve_import <- read.csv(dir(pattern = ".csv$")[3], na.strings = c("", " "))
+dim(eve_import)
 
 morn <- morn_import
 aft <- aft_import
@@ -45,36 +57,36 @@ View(eve)
 
 # remove other extra columns
 morn <- morn[, !colnames(morn) %in% c(
-  "Unanswered.Status", 
-  "Device.ID", "Device.Manufacturer", "Device.Model", 
+  "Unanswered.Status",
+  "Device.ID", "Device.Manufacturer", "Device.Model",
   "Device.Last.Used", "Device.App.Version", "Device.App.Update.Date",
-  "UUID", "Activity.Version", "Prompt.Time", "Expiry.Time", "Status", 
-  "Triggering.Logic.ID", "Triggering.Logic.Type", 
-  "Duration..seconds..from.scheduled.to.completion.time", 
+  "UUID", "Activity.Version", "Prompt.Time", "Expiry.Time", "Status",
+  "Triggering.Logic.ID", "Triggering.Logic.Type",
+  "Duration..seconds..from.scheduled.to.completion.time",
   "Duration..seconds..from.first.response.to.completion.time",
-  "Location", 
+  "Location",
   "X.83_MAQ_1..Indoors", "X.83_MAQ_2..Outdoors"
 )]
 
 aft <- aft[, !colnames(aft) %in% c(
-  "Unanswered.Status", 
-  "Device.ID", "Device.Manufacturer", "Device.Model", 
+  "Unanswered.Status",
+  "Device.ID", "Device.Manufacturer", "Device.Model",
   "Device.Last.Used", "Device.App.Version", "Device.App.Update.Date",
-  "UUID", "Activity.Version", "Prompt.Time", "Expiry.Time", "Status", 
-  "Triggering.Logic.ID", "Triggering.Logic.Type", 
-  "Duration..seconds..from.scheduled.to.completion.time", 
+  "UUID", "Activity.Version", "Prompt.Time", "Expiry.Time", "Status",
+  "Triggering.Logic.ID", "Triggering.Logic.Type",
+  "Duration..seconds..from.scheduled.to.completion.time",
   "Duration..seconds..from.first.response.to.completion.time",
-  "Location", 
+  "Location",
   "X.83_MAQ_1..Indoors", "X.83_MAQ_2..Outdoors"
 )]
 
 eve <- eve[, !colnames(eve) %in% c(
-  "Unanswered.Status", 
-  "Device.ID", "Device.Manufacturer", "Device.Model", 
+  "Unanswered.Status",
+  "Device.ID", "Device.Manufacturer", "Device.Model",
   "Device.Last.Used", "Device.App.Version", "Device.App.Update.Date",
-  "UUID", "Activity.Version", "Prompt.Time", "Expiry.Time", "Status", 
-  "Triggering.Logic.ID", "Triggering.Logic.Type", 
-  "Duration..seconds..from.scheduled.to.completion.time", 
+  "UUID", "Activity.Version", "Prompt.Time", "Expiry.Time", "Status",
+  "Triggering.Logic.ID", "Triggering.Logic.Type",
+  "Duration..seconds..from.scheduled.to.completion.time",
   "Duration..seconds..from.first.response.to.completion.time",
   "Location"
 )]
@@ -90,9 +102,9 @@ colnames(eve) <- gsub("\\.6964$", "", colnames(eve))
 colnames(eve)
 
 # check that all datasets have the same columns between them / for discrepancies
-setdiff(names(morn), names(aft)) 
-setdiff(names(morn), names(eve)) 
-setdiff(names(aft), names(eve)) 
+setdiff(names(morn), names(aft))
+setdiff(names(morn), names(eve))
+setdiff(names(aft), names(eve))
 ```
 
 # Deal with time
@@ -128,20 +140,19 @@ dat <- dat %>% separate(day, c("date", "time"), sep = " ", fill = "right")
 dat$date <- as.Date(dat$date, "%Y-%m-%d")
 
 dat <- dat %>%
-  mutate(date = as_date(date)) %>%  #
-  group_by(Participant.Label) %>%  
+  mutate(date = as_date(date)) %>% #
+  group_by(Participant.Label) %>%
   mutate(
-    dayvar = cumsum(!duplicated(date)),  
-    beepconsec = seq(1, n()) 
+    dayvar = cumsum(!duplicated(date)),
+    beepconsec = seq(1, n())
   ) %>%
-  relocate(dayvar, .after = time) %>%  
-  relocate(beepconsec, .after = dayvar) %>%  
-  
+  relocate(dayvar, .after = time) %>%
+  relocate(beepconsec, .after = dayvar) %>%
   # Beep variable
-  group_by(date) %>%  
-  mutate(beepvar = seq(1, n())) %>%  
-  ungroup() %>%  
-  relocate(beepvar, .after = dayvar)  
+  group_by(date) %>%
+  mutate(beepvar = seq(1, n())) %>%
+  ungroup() %>%
+  relocate(beepvar, .after = dayvar)
 
 View(dat)
 
@@ -153,25 +164,29 @@ colnames(dat_clean)
 
 # Baseline data/OCI scores
 ```{r baseline}
-baseline <- read.csv("Raw_data/05d_raw_data/R15 baseline.csv")
+baseline <- read.csv("Raw_data/08_raw_data/R15 baseline.csv")
 View(baseline)
 
 baseline <- baseline %>%
-  mutate(participant_id = recode(participant_id, 
-                                    "pr053" = "PR053", 
-                                    "pr182" = "PR182", 
-                                    "pr231" = "PR231",
-                                    "pr074" = "PR074", 
-                                    "Pr248" = "PR248")) # when merging baseline with EMA - found that some ID's were missing since they were labeled incorrectly.
+  mutate(participant_id = recode(participant_id,
+    "pr053" = "PR053",
+    "pr182" = "PR182",
+    "pr231" = "PR231",
+    "pr074" = "PR074",
+    "Pr248" = "PR248"
+  )) # when merging baseline with EMA - found that some ID's were missing since they were labeled incorrectly.
 
 
 # confirm item ranges 0-4
 apply(baseline[, grepl("^oci", colnames(baseline))], 2, range, na.rm = TRUE)
 
 # make total sum column
-baseline$oci_sum <- rowSums(as.data.frame(lapply(baseline[, paste0("oci_", 1:18)], function(x)
-  as.numeric(gsub("\\s", "", x)))),
-  na.rm = TRUE)
+baseline$oci_sum <- rowSums(
+  as.data.frame(lapply(baseline[, paste0("oci_", 1:18)], function(x) {
+    as.numeric(gsub("\\s", "", x))
+  })),
+  na.rm = TRUE
+)
 
 summary(baseline$oci_sum) # 0-63
 
@@ -192,9 +207,11 @@ baseline <- baseline %>%
 
 # add OCI cutoff and total columns to dat (with empty rows removed)
 dat_clean <- dat_clean %>%
-  left_join(baseline %>%
-              select(Participant.Label, oci_21_or_higher, oci_sum), 
-            by = "Participant.Label")
+  left_join(
+    baseline %>%
+      select(Participant.Label, oci_21_or_higher, oci_sum),
+    by = "Participant.Label"
+  )
 
 # check if anyone is missing OCI
 dat_clean %>%
@@ -216,15 +233,17 @@ dat_clean_oci_filter <- dat_clean %>%
 
 # add OCI cutoff and total column to dat (with empty rows still there)
 dat <- dat %>%
-  left_join(baseline %>%
-              select(Participant.Label, oci_21_or_higher, oci_sum), 
-            by = "Participant.Label")
+  left_join(
+    baseline %>%
+      select(Participant.Label, oci_21_or_higher, oci_sum),
+    by = "Participant.Label"
+  )
 
 # filter to oci_21_or_higher = 1
 dat_oci_filter <- dat %>%
   filter(oci_21_or_higher == 1)
 
-# check how many unique IDs are in the EMA OCI > 20 data 
+# check how many unique IDs are in the EMA OCI > 20 data
 n_distinct(dat$Participant.Label)
 n_distinct(dat_clean_oci_filter$Participant.Label) # 50
 ```
@@ -246,55 +265,62 @@ dat_clean_oci_filter <- dat_clean_oci_filter %>%
 
 View(dat_clean_oci_filter)
 
-write.csv(dat, 
-          file = paste0("05d_Output/Created_data/EMA_", format(Sys.Date(), "%Y_%m_%d"), ".csv"), 
-          row.names = TRUE) # version *with* empty rows (no OCI filter)
+write.csv(dat,
+  file = paste0("08_Output/Created_data/EMA_", format(Sys.Date(), "%Y_%m_%d"), ".csv"),
+  row.names = TRUE
+) # version *with* empty rows (no OCI filter)
 
-write.csv(dat_oci_filter, 
-          file = paste0("05d_Output/Created_data/EMA_OCI21_", format(Sys.Date(), "%Y_%m_%d"), ".csv"), 
-          row.names = TRUE) # version *with* empty rows and OCI >= 21
+write.csv(dat_oci_filter,
+  file = paste0("08_Output/Created_data/EMA_OCI21_", format(Sys.Date(), "%Y_%m_%d"), ".csv"),
+  row.names = TRUE
+) # version *with* empty rows and OCI >= 21
 
-write.csv(dat_clean, 
-          file = paste0("05d_Output/Created_data/EMA_clean_", format(Sys.Date(), "%Y_%m_%d"), ".csv"), 
-          row.names = TRUE) # version *without* empty rows (no OCI filter)
+write.csv(dat_clean,
+  file = paste0("08_Output/Created_data/EMA_clean_", format(Sys.Date(), "%Y_%m_%d"), ".csv"),
+  row.names = TRUE
+) # version *without* empty rows (no OCI filter)
 
-write.csv(dat_clean_oci_filter, 
-          file = paste0("05d_Output/Created_data/EMA_OCI21_clean_", format(Sys.Date(), "%Y_%m_%d"), ".csv"), 
-          row.names = TRUE) # version *without* empty rows and OCI >= 21
+write.csv(dat_clean_oci_filter,
+  file = paste0("08_Output/Created_data/EMA_OCI21_clean_", format(Sys.Date(), "%Y_%m_%d"), ".csv"),
+  row.names = TRUE
+) # version *without* empty rows and OCI >= 21
 
 dat_clean_oci_filter %>%
   split(.$Participant.Label) %>%
-  walk2(names(.), ~ write.csv(.x, file.path("05d_Output/Created_data/EMA_OCI21_clean/",
-                                            paste0("EMA_", .y, ".csv")),
-                              row.names = TRUE)) # person-level CSVs *without* empty rows and OCI >= 21
+  walk2(names(.), ~ write.csv(.x, file.path(
+    "08_Output/Created_data/EMA_OCI21_clean/",
+    paste0("EMA_", .y, ".csv")
+  ),
+  row.names = TRUE
+  )) # person-level CSVs *without* empty rows and OCI >= 21
 ```
 
 
 ```{r analysis dataset}
 # put together a version of the dataset EMA_OCI21_2025_03_04 (with missing rows included) that follows the below format with day and beep variables. Please include the following variables (you don't have to rename them): Q5, Q7, Q9, Q10,  Q11, Q13, Q14, Q15, Q21, Q22, Q23, Q25, Q32, Q41, Q42, Q43, Q44, Q45, Q47, Q48, Q49, Q66, Q70
-colnames(dat_oci_filter) 
+colnames(dat_oci_filter)
 
 dat_oci_filter <- dat_oci_filter %>%
-  group_by(Participant.Label, dayvar) %>%               
-  mutate(beepvar_upd = row_number()) %>%  # make beepvar right                
-  ungroup()  
+  group_by(Participant.Label, dayvar) %>%
+  mutate(beepvar_upd = row_number()) %>% # make beepvar right
+  ungroup()
 
 dat_oci_filtered_IV <- dat_oci_filter %>%
   select(
-    Participant.Label, 
-    Session.Scheduled.Time, 
-    date, 
-    time, 
-    dayvar, 
+    Participant.Label,
+    Session.Scheduled.Time,
+    date,
+    time,
+    dayvar,
     beepvar_upd,
     matches("^X\\.(5|7|9|10|11|13|14|15|21|22|23|25|32|41|42|43|44|45|47|48|49|66|70)_VAS..Question\\.(5|7|9|10|11|13|14|15|21|22|23|25|32|41|42|43|44|45|47|48|49|66|70)\\.of\\.Survey$")
   ) %>%
   select(
-    Participant.Label, 
-    Session.Scheduled.Time, 
-    date, 
-    time, 
-    dayvar, 
+    Participant.Label,
+    Session.Scheduled.Time,
+    date,
+    time,
+    dayvar,
     beepvar_upd,
     X.5_VAS..Question.5.of.Survey,
     X.7_VAS..Question.7.of.Survey,
@@ -322,20 +348,21 @@ dat_oci_filtered_IV <- dat_oci_filter %>%
   )
 
 dat_oci_filtered_IV <- dat_oci_filtered_IV %>%
-  arrange(Participant.Label, dayvar, beepvar_upd) 
+  arrange(Participant.Label, dayvar, beepvar_upd)
 
 View(dat_oci_filtered_IV)
 
 dat_oci_filtered_IV <- dat_oci_filtered_IV %>%
   rename(
-    ID = Participant.Label,    
-    day = dayvar,              
-    beep = beepvar_upd      
+    ID = Participant.Label,
+    day = dayvar,
+    beep = beepvar_upd
   )
 
 
-write.csv(dat_oci_filtered_IV, 
-          file = paste0("05d_Output/Created_data/EMA_OCI21_vars_", format(Sys.Date(), "%Y_%m_%d"), ".csv"), 
-          row.names = TRUE) 
+write.csv(dat_oci_filtered_IV,
+  file = paste0("08_Output/Created_data/EMA_OCI21_vars_", format(Sys.Date(), "%Y_%m_%d"), ".csv"),
+  row.names = TRUE
+)
 ```
 
