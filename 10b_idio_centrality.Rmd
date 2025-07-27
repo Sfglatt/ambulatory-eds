@@ -1,0 +1,131 @@
+---
+title: "10b_idio_centrality"
+author: "Sglatt"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Packages
+```{r}
+if (!require("dplyr")) {
+  install.packages("dplyr")
+  require("dplyr")
+}
+```
+
+```{r set up}
+# Set the path to where all the output folders are (with each persons folder)
+path <- "~/Box/Interoceptive Abstract/Network_results/"
+
+# Import all of the "centralitytables" CSVs (from each persons folder in that path)
+files_to_read <- list.files(
+  path = path,
+  pattern = "_centralitytables.csv$",
+  recursive = TRUE,
+  full.names = TRUE
+)
+
+# List all of the files that it pulls
+data_lst <- lapply(files_to_read, read.csv)
+```
+
+# Contemporaneous centrality table
+```{r pcc centrality}
+target_cols <- c("nodes", "Strength")
+
+pcc_summary_list <- lapply(seq_along(data_lst), function(i) {
+  df <- data_lst[[i]] %>%
+    filter(type == "PCC") %>%
+    select(any_of(target_cols))
+
+  # ***make sure to fill missing IDs with NAs so it doesn't glitch
+  for (col in setdiff(target_cols, names(df))) {
+    df[[col]] <- NA
+  }
+  df <- df[, target_cols]
+
+  df <- df %>% filter(!is.na(Strength))
+
+  df <- df %>% arrange(desc(Strength))
+
+  # Get top 3 nodes and strengths
+  top_nodes <- df$nodes[1:3]
+  top_nodes <- c(top_nodes, rep(NA, 3 - length(top_nodes)))
+
+  top_strengths <- df$Strength[1:3]
+  top_strengths <- c(top_strengths, rep(NA, 3 - length(top_strengths)))
+
+  tibble(
+    participant_id = tools::file_path_sans_ext(basename(files_to_read[i])),
+    Top1_Strength_Node = top_nodes[1],
+    Top1_Strength_Val = top_strengths[1],
+    Top2_Strength_Node = top_nodes[2],
+    Top2_Strength_Val = top_strengths[2],
+    Top3_Strength_Node = top_nodes[3],
+    Top3_Strength_Val = top_strengths[3]
+  )
+})
+
+pcc_summary_table <- bind_rows(pcc_summary_list)
+
+pcc_summary_table
+```
+
+# Temporal centrality
+```{r pdc centrality}
+target_cols <- c("nodes", "OutStrength")
+
+pdc_summary_list <- lapply(seq_along(data_lst), function(i) {
+  df <- data_lst[[i]] %>%
+    filter(type == "PDC") %>%
+    select(any_of(target_cols))
+
+
+  for (col in setdiff(target_cols, names(df))) {
+    df[[col]] <- NA
+  }
+  df <- df[, target_cols]
+
+  df <- df %>% filter(!is.na(OutStrength))
+
+  df <- df %>% arrange(desc(OutStrength))
+
+  # Get top 3 nodes and OutStrengths
+  top_nodes <- df$nodes[1:3]
+  top_nodes <- c(top_nodes, rep(NA, 3 - length(top_nodes)))
+
+  top_outstrengths <- df$OutStrength[1:3]
+  top_outstrengths <- c(top_outstrengths, rep(NA, 3 - length(top_outstrengths)))
+
+  tibble(
+    participant_id = tools::file_path_sans_ext(basename(files_to_read[i])),
+    Top1_OutStrength_Node = top_nodes[1],
+    Top1_OutStrength_Val = top_outstrengths[1],
+    Top2_OutStrength_Node = top_nodes[2],
+    Top2_OutStrength_Val = top_outstrengths[2],
+    Top3_OutStrength_Node = top_nodes[3],
+    Top3_OutStrength_Val = top_outstrengths[3]
+  )
+})
+
+pdc_summary_table <- bind_rows(pdc_summary_list)
+
+pdc_summary_table
+```
+
+# Combine the pcc and pdc dataframes
+```{r pcc pdc combine}
+combined_summary <- full_join(pdc_summary_table, pcc_summary_table, by = "participant_id")
+
+# Save
+write.csv(
+  combined_summary,
+  paste0("~/Box/Interoceptive Abstract/Network_results/Top_centrality_table_", Sys.Date(), ".csv"),
+  row.names = FALSE
+)
+```
+
