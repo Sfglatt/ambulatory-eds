@@ -1,0 +1,221 @@
+---
+title: "10c_idio_figs"
+author: "Sglatt"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+Selected visualizations from analyses in script 10a & 10b for presentation 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Packages
+```{r packages}
+if (!require("dplyr")) {
+  install.packages("dplyr")
+  require("dplyr")
+}
+if (!require("ggplot2")) {
+  install.packages("ggplot2")
+  require("ggplot2")
+}
+if (!require("graphicalVAR")) {
+  install.packages("graphicalVAR")
+  require("graphicalVAR")
+}
+if (!require("gridExtra")) {
+  install.packages("gridExtra")
+  require("gridExtra")
+}
+if (!require("qgraph")) {
+  install.packages("qgraph")
+  require("qgraph")
+}
+```
+
+# Data
+```{r data}
+dataset <- read.csv("10_raw_materials/PT_EMA 2022-05-17 full cleaned with controls without _F.csv")
+# view(dataset)
+
+# Filter to exemplar participants to visualize
+vis_data <- dataset %>%
+  filter(IDclean %in% c("PT003", "PT009", "PT022", "PT044", "PT045"))
+```
+
+# Idiographic networks 
+IDs for the poster visualizations: PT003, PT009, PT022, PT044, & PT045
+```{r idiographic}
+# Symptoms to include in the networks
+vars <- c(
+  "fowg",       # I am terrified of gaining weight
+  "drivethin",  # I am preoccupied with the desire to be thinner
+  "bodydiss",   # I do not like how my body looks
+  "bodycheck",  # I frequently check to see if my body has changed (e.g., by pinching)
+  "heartrace",  # My heart races for no good reason
+  "interocept", # I am very sensitive to changes in my internal bodily sensations
+  "pays_sens"   # I don't like the physical sensations I feel when eating
+  # "feelfat"   # I feel fat - this symptom is included in the abstract, but do not include because everyone before 57 did not fill this item out/wasn't administered
+)
+
+# Loop through these IDs 
+participant_ids <- c("PT003", "PT009", "PT022", "PT044", "PT045")
+
+# Store plots; run idiographic networks
+networks <- list()
+for (id in participant_ids) {
+  networks[[id]] <- graphicalVAR(vis_data[vis_data$IDclean == id, ],
+    vars = vars,
+    beepvar = "beepvar",
+    dayvar = "dayvar",
+    gamma = 0,
+    verbose = TRUE
+  )
+}
+
+# Access individual networks like so:
+networks[["PT003"]]
+```
+
+# Visualizations
+```{r Visualize}
+# Layout for all networks
+labelsObject <- c("fowg", "drivethin", "bodydiss", "bodycheck", "heartrace", "interocept", "pays_sens")
+
+n_nodes <- length(labelsObject)
+
+angles <- seq(0, 2*pi, length.out = n_nodes + 1)[- (n_nodes + 1)]
+layout <- cbind(cos(angles), sin(angles))
+
+# Relationships color
+pos_col <- "darkgreen"
+neg_col <- "firebrick"
+
+# Symptom fill 
+node_fill <- rep("white", n_nodes)
+
+# Symptom border colors
+labelsObject <- c("fowg", 
+                  "drivethin",
+                  "bodydiss",
+                  "bodycheck", 
+                  "heartrace", 
+                  "interocept",
+                  "pays_sens")
+
+node_border <- c("#666fff", "#666fff", "#666fff", "#666fff", # Eating Disorder symptoms 
+                 "#FFFF99", "#FFFF99", "#FFFF99")  # Interoception symptoms 
+# Trying to match the poster colors
+
+# Border thickness (make clearly visible for poster)
+border_thickness <- 4 
+
+for (id in participant_ids) {
+  # Temporal networks
+  plots[[paste0(id, "_temporal")]] <- qgraph(
+    networks[[id]]$PDC,
+    mar = rep(12, 4),
+    title = paste0("\n\n", id, ": Temporal"),
+    title.cex = 0.8,
+    layout = layout,
+    diag = TRUE,
+    nodeNames = labelsObject,
+    labels = labelsObject,
+    label.scale.equal = TRUE,
+    legend = FALSE,
+    posCol = pos_col,
+    negCol = neg_col,
+    color = node_fill,         
+    border.color = node_border, 
+    border.width = border_thickness 
+  )
+  
+  # Contemporaneous networks
+  plots[[paste0(id, "_contemporaneous")]] <- qgraph(
+    networks[[id]]$PCC,
+    mar = rep(12, 4),
+    title = paste0("\n\n", id, ": Contemporaneous"),
+    title.cex = 0.8,
+    layout = layout,
+    diag = TRUE,
+    nodeNames = labelsObject,
+    labels = labelsObject,
+    label.scale.equal = TRUE,
+    legend = FALSE,
+    posCol = pos_col,
+    negCol = neg_col,
+    color = node_fill,
+    border.color = node_border,
+    border.width = border_thickness
+  )
+}
+```
+
+# Save figures
+```{r save figures}
+for (id in participant_ids) {
+  
+  # Temporal network
+  png(filename = paste0("10_Output/10c/",
+                        id, "_temporal_color.png"),
+      width = 1200, height = 1200, res = 300)
+  plot(plots[[paste0(id, "_temporal")]])
+  dev.off()
+  
+  # Contemporaneous network
+  png(filename = paste0("10_Output/10c/",
+                        id, "_contemporaneous_color.png"),
+      width = 1200, height = 1200, res = 300)
+  plot(plots[[paste0(id, "_contemporaneous")]])
+  dev.off()
+}
+```
+
+# Save all networks in one image
+```{r save all}
+png("10_Output/10c/PTall_nets_color.png", width = 5000, height = 6000, res = 300)
+
+n_participants <- length(participant_ids)
+par(mfrow = c(n_participants, 2), mar = c(2,2,4,2))  
+
+for (id in participant_ids) {
+  # Temporal
+  qgraph(networks[[id]]$PDC,
+         layout = layout,
+         diag = TRUE,
+         nodeNames = labelsObject,
+         labels = labelsObject,
+         label.scale.equal = TRUE,
+         posCol = pos_col,
+         negCol = neg_col,
+         color = node_fill,
+         border.color = node_border,
+         border.width = border_thickness,
+         vsize = 12,        
+         title = paste0(id, ": Temporal"),
+         title.cex = 1.3,
+         legend = FALSE)   
+
+  # Contemporaneous
+  qgraph(networks[[id]]$PCC,
+         layout = layout,
+         diag = TRUE,
+         nodeNames = labelsObject,
+         labels = labelsObject,
+         label.scale.equal = TRUE,
+         posCol = pos_col,
+         negCol = neg_col,
+         color = node_fill,
+         border.color = node_border,
+         border.width = border_thickness,
+         vsize = 12,
+         title = paste0(id, ": Contemporaneous"),
+         title.cex = 1.3,
+         legend = FALSE)
+}
+
+dev.off()
+```
+
