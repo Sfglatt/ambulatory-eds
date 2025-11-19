@@ -1,0 +1,185 @@
+---
+title: "08c_visualization"
+author: "Sglatt"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 6
+    toc_float: true
+    number_sections: true
+    code_folding: show
+    theme: cosmo
+    df_print: paged
+  pdf_document:
+    toc: true
+    toc_depth: '6'
+  word_document:
+    toc: true
+    toc_depth: '6'
+---
+
+Presentation visualizations corresponding to 08b_analysis.Rmd for select participants with customization.
+
+```{r packages}
+if (!require("tidyverse")) {
+  install.packages("tidyverse")
+  require("tidyverse")
+}
+if (!require("psych")) {
+  install.packages("psych")
+  require("psych")
+}
+if (!require("qgraph")) {
+  install.packages("qgraph")
+  require("qgraph")
+}
+if (!require("graphicalVAR")) {
+  install.packages("graphicalVAR")
+  require("graphicalVAR")
+}
+```
+
+```{r directory}
+if (!dir.exists("08_Output/Presentation_vis")) {
+  dir.create("08_Output/Presentation_vis")
+}
+```
+
+```{r data}
+# Import their data, created in 08b_analysis.Rmd
+data_pr116 <- read.csv("08_Output/Analysis_data/PR116_analysis_data.csv")
+data_pr018 <- read.csv("08_Output/Analysis_data/PR018_analysis_data.csv")
+data_pr235 <- read.csv("08_Output/Analysis_data/PR235_analysis_data.csv")
+data_pr243 <- read.csv("08_Output/Analysis_data/PR243_analysis_data.csv")
+```
+
+```{r vars and networks}
+# Each person has 4 *different* symptoms modeled with 2 *common* symptoms
+# Pull the right variables per person in order to run on a loop
+participant_data <- list(
+  PR116 = list(
+    data = data_pr116,
+    vars = colnames(data_pr116)[!(colnames(data_pr235) %in% c("X", "day", "beep"))]
+  ),
+  PR018 = list(
+    data = data_pr018,
+    vars = colnames(data_pr018)[!(colnames(data_pr235) %in% c("X", "day", "beep"))]
+  ),
+  PR235 = list(
+    data = data_pr235,
+    vars = colnames(data_pr235)[!(colnames(data_pr235) %in% c("X", "day", "beep"))]
+  ),
+  PR243 = list(
+    data = data_pr243,
+    vars = colnames(data_pr243)[!(colnames(data_pr243) %in% c("X", "day", "beep"))]
+  )
+)
+
+# Now use that participant_data in networks (temporal, not contemporaneous)
+networks <- list()
+
+for (id in names(participant_data)) {
+  df <- participant_data[[id]]$data
+  vars <- participant_data[[id]]$vars
+
+  networks[[id]] <- graphicalVAR(
+    df,
+    vars     = vars,
+    beepvar  = "beep",
+    dayvar   = "day",
+    gamma    = 0,
+    verbose  = TRUE
+  )
+}
+```
+
+# Visualize networks
+```{r Visualize}
+# Because each participant has different symptoms and we want OCD symptoms (common across people) to be one color, 
+# I'm writing a quick function to color the common (OCD) versus individualized symptoms:
+get_node_fill <- function(vars) {
+  sapply(vars, function(v) {
+    if (v %in% c("obsession", "compuls")) {
+      "powderblue"
+    } else {
+      "rosybrown1"
+    }
+  })
+}
+
+# Relationships color
+pos_col <- "darkgreen"
+neg_col <- "firebrick"
+
+border_thickness <- 3
+
+# Loop and visualize
+plots <- list()
+
+for (id in names(participant_data)) {
+  vars <- participant_data[[id]]$vars
+  net <- networks[[id]]
+
+  node_fill <- get_node_fill(vars)
+  labelsObject <- vars
+
+  plots[[paste0(id, "_temporal")]] <- qgraph(
+    net$PDC, # Same layout as prior
+    mar = rep(12, 4),
+    diag = TRUE,
+    nodeNames = labelsObject,
+    labels = labelsObject,
+    label.scale.equal = TRUE,
+    label.cex = 1.3,
+    legend = FALSE,
+    posCol = pos_col,
+    negCol = neg_col,
+    color = node_fill,
+    border.color = "black",
+    border.width = border_thickness
+  )
+
+  plots[[paste0(id, "_temporal")]]$layout_matrix <- plots[[paste0(id, "_temporal")]]$layout
+}
+```
+
+# Save figures
+```{r Save}
+participant_ids <- names(participant_data)
+
+for (id in participant_ids) {
+
+  vars <- participant_data[[id]]$vars
+  node_fill <- get_node_fill(vars)
+  labelsObject <- vars
+
+  layout_matrix <- plots[[paste0(id, "_temporal")]]$layout_matrix
+
+  png(
+    filename = paste0("08_Output/Presentation_vis/", id, "_temporal_color.png"),
+    width = 1200, height = 1200, res = 300
+  )
+
+  qgraph(
+    networks[[id]]$PDC,
+    layout = layout_matrix,
+    diag = TRUE,
+    nodeNames = labelsObject,
+    labels = labelsObject,
+    label.scale.equal = TRUE,
+    label.cex = 1.3,
+    legend = FALSE,
+    posCol = pos_col,
+    negCol = neg_col,
+    color = node_fill,
+    border.color = "black",
+    border.width = border_thickness,
+    edge.labels = FALSE   
+  )
+
+  dev.off()
+}
+
+```
+

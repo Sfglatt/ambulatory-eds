@@ -35,6 +35,23 @@ if (!require("stringr")) {
   install.packages("stringr")
   require("stringr")
 }
+if (!require("tidyr")) {
+  install.packages("tidyr")
+  require("tidyr")
+}
+if (!require("ggplot2")) {
+  install.packages("ggplot2")
+  require("ggplot2")
+}
+if (!require("forcats")) {
+  install.packages("forcats")
+  require("forcats")
+}
+
+if (!require("scales")) {
+  install.packages("scales")
+  require("scales")
+}
 ```
 
 # Pull imputed data from 31 participants with < 50% raw data missing and combine into a single dataset
@@ -64,7 +81,7 @@ colnames(all_data)
 demos <- read.csv("Raw_data/Demographics.csv")
 
 all_data <- all_data %>%
-  left_join(demos %>% select(ID, dx), by = "ID")
+  left_join(demos %>% dplyr::select(ID, dx), by = "ID")
 
 # look at dx breakdown
 dx_totals <- all_data %>%
@@ -79,6 +96,137 @@ dx_totals
 # Filter to only AN or AAN
 all_data_an <- all_data %>%
   filter(dx %in% c("AAN", "AN"))
+```
+# Demographics
+```{r demos}
+colnames(demos)
+all_data_base <- all_data %>%
+  left_join(demos %>% dplyr::select(ID, 
+                                    dx, 
+                                    Sex.at.birth, 
+                                    Gender, 
+                                    Race.ethnicity, 
+                                    Age), by = "ID")
+
+all_data_an_base <- all_data_base %>%
+  dplyr::filter(dx.x %in% c("AAN", "AN"))
+
+# Remove "PR020" and "PR042"
+all_data_an_base <- all_data_an_base %>%
+  filter(!ID %in% c("PR020", "PR042"))
+
+first_obs_an <- all_data_an_base %>%
+  group_by(ID) %>%
+  slice(1) %>%
+  ungroup()
+
+table(first_obs_an$Sex.at.birth) # 17 Female ("2"), 1 Male ("3")
+table(first_obs_an$Gender) # 16 female ("1"), 1 gender-variant/non-conforming ("5"), 1 not listed "6"
+table(first_obs_an$Race.ethnicity) # 15 white ("5"), 1 Asian or Pacific Islander ("1"), 2 Hispanic ("3")
+table(first_obs_an$dx.x) # 10 AN and 8 AAN
+summary(first_obs_an$Age) # M = 32.5 (21-64)
+sd(first_obs_an$Age) # SD = 9.6
+
+# Quick visuals of sex, gender, and race/ethnicity
+first_obs_an <- first_obs_an %>%
+  mutate(Sex.at.birth = recode(as.character(Sex.at.birth),
+                               "2" = "Female",
+                               "3" = "Male"))
+
+first_obs_an <- first_obs_an %>%
+  mutate(Gender = recode(as.character(Gender),
+                         "1" = "Woman",
+                         "5" = "Gender-variant / Non-conforming",
+                         "6" = "Not listed"))
+
+first_obs_an <- first_obs_an %>%
+  mutate(Race.ethnicity = recode(as.character(Race.ethnicity),
+                                 "5" = "White",
+                                 "1" = "Asian / Pacific Islander",
+                                 "3" = "Hispanic"))
+
+p1 <- ggplot(first_obs_an, aes(x = fct_infreq(dx.x))) +
+  geom_bar(fill = "purple") +
+  geom_text(aes(label = ..count..), stat = "count", vjust = -0.5) +
+  labs(title = "ED Diagnosis", x = NULL, y = "Count") +
+  theme(
+    panel.background = element_blank(),
+    plot.background = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(color = "black"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(hjust = 0.5)
+  )
+
+p2 <- ggplot(first_obs_an, aes(x = fct_infreq(Sex.at.birth))) +
+  geom_bar(fill = "lightblue") +
+  geom_text(aes(label = ..count..), stat = "count", vjust = -0.5) +
+  labs(title = "Sex at Birth", x = NULL, y = "") +
+  theme(
+    panel.background = element_blank(),
+    plot.background = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(color = "black"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(hjust = 0.5)
+  )
+
+# Gender
+p3 <- ggplot(first_obs_an, aes(x = fct_infreq(Gender))) +
+  geom_bar(fill = "lightgreen") +
+  geom_text(aes(label = ..count..), stat = "count", vjust = -0.5) +
+  labs(title = "Gender", x = NULL, y = "") +
+  theme(
+    panel.background = element_blank(),
+    plot.background = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(color = "black"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(hjust = 0.5)
+  )
+
+# Race/Ethnicity
+p4 <- ggplot(first_obs_an, aes(x = fct_infreq(Race.ethnicity))) +
+  geom_bar(fill = "lightcoral") +
+  geom_text(aes(label = ..count..), stat = "count", vjust = -0.5) +
+  labs(title = "Race/Ethnicity", x = NULL, y = "") +
+  theme(
+    panel.background = element_blank(),
+    plot.background = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(color = "black"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(hjust = 0.5)
+  )
+
+# Combine plots side by side
+combined_plot <- p1 + p2 + p3 + p4 + plot_layout(ncol = 4)
+
+combined_plot
+
+#png("09_Output/demos.png", unit = "in", res = 300, width = 10, height = 5.5)
+#combined_plot
+#dev.off()
+
+png("09_Output/demos1.png", unit = "in", res = 300, width = 4, height = 5.5)
+p1
+dev.off()
+
+png("09_Output/demos2.png", unit = "in", res = 300, width = 4, height = 5.5)
+p2
+dev.off()
+
+png("09_Output/demos3.png", unit = "in", res = 300, width = 4, height = 5.5)
+p3
+dev.off()
+
+png("09_Output/demos4.png", unit = "in", res = 300, width = 4, height = 5.5)
+p4
+dev.off()
 ```
 
 # remove variables for analysis
@@ -95,7 +243,7 @@ describe(all_data_an[, -c(1:9, 72)]) # aggregated across people
 
 # Remove items
 all_data_an_clean <- all_data_an %>%
-  select(
+  dplyr::select(
     -fowg, -badperson, -bodydiss, -shame, -thought_death, -laxdiur, # Remove per UVA
 
     -badperson, -worthless, -thought_death, -vomit, -binge, -intrus_thought, -food_intrus, -sad,
@@ -109,7 +257,7 @@ colnames(all_data_an_clean)
 
 # Remove other non-symptom extra variables
 all_data_an_clean <- all_data_an_clean %>%
-  select(-c(2:9))
+  dplyr::select(-c(2:9))
 
 describe(all_data_an_clean[, -1])
 ```
@@ -117,7 +265,7 @@ describe(all_data_an_clean[, -1])
 # dynamic EGA; 
 # is similar to EGA but evaluates the degree to which nodes change together over time.
 # communities of nodes represent dynamical factors containing items that change together as a function of time.
-```{r}
+```{r Nets}
 parallel::detectCores()
 
 # Individual structures with first-order derivatives
@@ -134,35 +282,187 @@ parallel::detectCores()
 
 dyn_ega_d1
 
-# Derive first-order derivatives
-str(dyn_ega_d1)
-str(dyn_ega_d1$Derivatives)
-# dyn_ega$Derivatives$Estimates$PR007
-# Derivatives_PR007 <- as.data.frame(dyn_ega$Derivatives$Estimates$PR007)
-# View(Derivatives_PR007)
-
-dyn_ega_d1$Derivatives$EstimatesDF
-Derivatives_data <- as.data.frame(dyn_ega_d1$Derivatives$EstimatesDF)
-
 # plots
 plot(dyn_ega_d1$dynEGA$population)
 plot(dyn_ega_d1$dynEGA$group)
-plot(dyn_ega_d1$dynEGA$individual)
-plot(dyn_ega_d1$dynEGA$individual, id = "PR003")
+# Plot TWO participants 
+plot(dyn_ega_d1$dynEGA$individual[[1]]) # Participant 1
+```
 
+
+```{r Nets vis, eval=FALSE}
 # save images
-pdf("09_Output/dynamic_ega_pop.pdf", width = 7, height = 7)
-plot(dyn_ega_d1$dynEGA$population)
+pdf("09_Output/dynamic_ega_pop.pdf", width = 10, height = 7)
+plot(dyn_ega_d1$dynEGA$population,
+     node.color = c("#EE3A8C", "#00C5CD", "#6A5ACD"))
 dev.off()
 
 pdf("09_Output/dynamic_ega_group.pdf", width = 14, height = 7)
 plot(dyn_ega_d1$dynEGA$group)
 dev.off()
 
-pdf("09_Output/dynamic_ega_individual.pdf", width = 14, height = 14)
+png("09_Output/dynamic_ega_individual.png", unit = "in", res = 300, width = 14, height = 14)
 plot(dyn_ega_d1$dynEGA$individual)
 dev.off()
+
+# For PPT
+png("09_Output/dynamic_ega_pop_1.png", unit = "in", res = 300, width = 10, height = 7)
+plot(dyn_ega_d1$dynEGA$population,
+     node.color = c("#EEEEE0", "#EEEEE0", "#EEEEE0"))
+dev.off()
+
+png("09_Output/dynamic_ega_pop_2.png", unit = "in", res = 300, width = 10, height = 7)
+plot(dyn_ega_d1$dynEGA$population,
+     node.color = c("#EEEEE0", "#EEEEE0", "#6A5ACD"))
+dev.off()
+
+png("09_Output/dynamic_ega_pop_3.png", unit = "in", res = 300, width = 10, height = 7)
+plot(dyn_ega_d1$dynEGA$population,
+     node.color = c("#EE3A8C", "#EEEEE0", "#6A5ACD"))
+dev.off()
+
+
+png("09_Output/dynamic_ega_pop_4.png", unit = "in", res = 300, width = 10, height = 7)
+plot(dyn_ega_d1$dynEGA$population,
+     node.color = c("#EE3A8C", "#00C5CD", "#6A5ACD"))
+dev.off()
 ```
+
+# Derivatives plot
+```{r derivatives vis}
+# Plot with raw data
+Raw_PR007 <- all_data_an_clean %>%
+  dplyr::filter(ID == "PR007") %>%
+  dplyr::select(where(is.numeric)) %>%   
+  slice(1:50) %>%                
+  mutate(time = 1:n()) %>%
+  pivot_longer(cols = -time, names_to = "Node", values_to = "Raw")
+
+# Raw data plot
+ggplot(Raw_PR007, aes(x = time, y = Raw, color = Node)) +
+  geom_line(size = 1) +
+  theme_minimal() +
+  labs(title = "Participant #7: Raw EMA (first 50 time points)",
+       x = "Time", y = "Value") +
+  scale_color_manual(values = hue_pal()(length(unique(Raw_PR007$Node))))
+
+# Now plot 1-o derivatives
+# Derive first-order derivatives
+# str(dyn_ega_d1)
+# str(dyn_ega_d1$Derivatives)
+dyn_ega_d1$Derivatives$Estimates$PR007
+Derivatives_PR007 <- as.data.frame(dyn_ega_d1$Derivatives$Estimates$PR007)
+View(Derivatives_PR007)
+
+dyn_ega_d1$Derivatives$EstimatesDF
+Derivatives_data <- as.data.frame(dyn_ega_d1$Derivatives$EstimatesDF)
+
+Derivatives_PR007_d1 <- Derivatives_PR007 %>%
+  dplyr::select(ends_with("Ord1")) %>%
+  dplyr::rename_with(~ gsub(".Ord1$", "", .))  
+# Keep only first 50 time points
+Derivatives_PR007_d1 <- Derivatives_PR007_d1[1:50, ]
+
+# Convert to long format
+Deriv_long <- Derivatives_PR007_d1 %>%
+  mutate(time = 1:n()) %>%
+  pivot_longer(cols = -time, names_to = "Node", values_to = "Derivative")
+
+# Plot first-order derivatives
+ggplot(Deriv_long, aes(x = time, y = Derivative, color = Node)) +
+  geom_line(size = 1) +
+  theme_minimal() +
+  labs(title = "Participant #7: First-order derivatives (first 50 time points)",
+       x = "Time", y = "Derivative") +
+  scale_color_manual(values = hue_pal()(length(unique(Deriv_long$Node))))
+
+# Now match the group EGA
+Derivatives_data <- as.data.frame(dyn_ega_d1$Derivatives$EstimatesDF)
+
+# Select only first-order derivatives (columns ending with Ord1)
+Derivatives_d1 <- Derivatives_data %>%
+  dplyr::select(ends_with("Ord1")) %>%
+  dplyr::rename_with(~ gsub(".Ord1$", "", .))
+
+# Convert to long format
+Deriv_long <- Derivatives_d1 %>%
+  mutate(time = 1:n()) %>%
+  pivot_longer(cols = -time, names_to = "Node", values_to = "Derivative")
+
+# Plot first-order derivatives at the group level - just for purple nodes
+ggplot(subset(Deriv_long, Node %in% c("avoid_food", "hunger_anx", "smallportion", 
+                                      "eat_anx", "foodrules", "skipmeal", "restrict")),
+       aes(x = time, y = Derivative, group = Node)) +
+  geom_line(color = "#6A5ACD", size = 1) +
+  theme_minimal() +
+  labs(
+    title = "Group-level: First-order derivatives",
+    x = "Time",
+    y = "Derivative"
+  )
+
+# Now add in pink nodes
+ggplot() +
+  # Purple nodes
+  geom_line(
+    data = subset(Deriv_long, Node %in% c("avoid_food", "hunger_anx", "smallportion", 
+                                          "eat_anx", "foodrules", "skipmeal", "restrict")),
+    aes(x = time, y = Derivative, group = Node),
+    color = "#6A5ACD",
+    size = 1
+  ) +
+  # Pink nodes
+  geom_line(
+    data = subset(Deriv_long, Node %in% c("attn_others", "bodycheck", "exercise", 
+                                          "feelfat", "wtshdiss", "desirethin")),
+    aes(x = time, y = Derivative, group = Node),
+    color = "#EE3A8C",  
+    size = 1
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Group-level: First-order derivatives",
+    x = "Time",
+    y = "Derivative"
+  )
+
+# And now add in teal nodes
+ggplot() +
+  # Purple nodes
+  geom_line(
+    data = subset(Deriv_long, Node %in% c("avoid_food", "hunger_anx", "smallportion", 
+                                          "eat_anx", "foodrules", "skipmeal", "restrict")),
+    aes(x = time, y = Derivative, group = Node),
+    color = "#6A5ACD",
+    size = 1
+  ) +
+  # Pink nodes
+  geom_line(
+    data = subset(Deriv_long, Node %in% c("attn_others", "bodycheck", "exercise", 
+                                          "feelfat", "wtshdiss", "desirethin")),
+    aes(x = time, y = Derivative, group = Node),
+    color = "#FF69B4",
+    size = 1
+  ) +
+  # Teal nodes
+  geom_line(
+    data = subset(Deriv_long, Node %in% c("fearloc", "guilty", "ineffective", "avoid_emo", 
+                                          "reject", "mistakes", "highstand", "iuc", "relax", 
+                                          "urge_restrict", "eat_worry", "fearlod", "overvalwtsh")),
+    aes(x = time, y = Derivative, group = Node),
+    color = "#00C5CD",
+    size = 1
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Group-level: First-order derivatives",
+    x = "Time",
+    y = "Derivative"
+  )
+
+
+```
+
 
 # empirical ergodicity information index for the full sample
 ```{r EII full}
@@ -245,7 +545,7 @@ plot(boot_eii_an)
 ```
 
 # empirical ergodicity information index for the AAN group
-```{r EEI aan}
+```{r EII aan}
 AAN_data <- all_data_an_clean %>%
   filter(!ID %in% c("PR020", "PR042"), dx == "AAN")
 

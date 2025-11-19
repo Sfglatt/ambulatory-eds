@@ -1,5 +1,5 @@
 ---
-title: "05d_analysis"
+title: "08b_analysis"
 author: "Sglatt"
 date: "`r Sys.Date()`"
 output:
@@ -38,7 +38,7 @@ library(clairecleans)
 
 # import data
 ```{r data}
-dat_import <- read.csv("05d_Output/Created_data/R15_ema.csv") # this is the dataset created in 05d_data *with the column names changed by IV
+dat_import <- read.csv("08_Output/Created_data/R15_ema.csv") # this is the dataset created in 08_data *with the column names changed by IV
 
 # remove technical columns (X, date, time) and the anxious EMA item
 dat_import <- dat_import %>%
@@ -141,7 +141,7 @@ for (id in names(result_list)) {
   
   participant_dataset <- result_list[[id]]
   
-  write.csv(participant_dataset, paste0("05d_Output/Analysis_data/", id, "_analysis_data.csv"))
+  write.csv(participant_dataset, paste0("08_Output/Analysis_data/", id, "_analysis_data.csv"))
 }
 
 ```
@@ -186,13 +186,13 @@ for (id in names(result_list)) {
   # Save the plots for each participant
 
   # PCC plot
-  pdf(paste0("05d_Output/Analysis_output/", id, "_network_PCC.pdf"), height = 5, width = 8)
+  pdf(paste0("08_Output/Analysis_output/", id, "_network_PCC.pdf"), height = 5, width = 8)
   pcc <- plot(network, "PCC",
               labels = vars, edge.labels = TRUE, layout = "spring", label.cex = 1.3, alpha = '0.05', vsize = 9)
   dev.off()
 
   # PDC plot
-  pdf(paste0("05d_Output/Analysis_output/", id, "_network_PDC.pdf"), height = 5, width = 8)
+  pdf(paste0("08_Output/Analysis_output/", id, "_network_PDC.pdf"), height = 5, width = 8)
   pdc <- plot(network, "PDC",
               labels = vars, label.cex = 1.3, alpha = '0.05', vsize = 9, edge.labels = TRUE, repulsion = 1.5)
   dev.off()
@@ -206,7 +206,7 @@ for (id in names(result_list)) {
           axis.text.x = element_text(angle = 90),
           strip.text.x = element_text(size = 15))
   
-  ggsave(centralityplot, filename = paste0("05d_Output/Analysis_output/", id, "_centralityplot.png"))
+  ggsave(centralityplot, filename = paste0("08_Output/Analysis_output/", id, "_centralityplot.png"))
   
   # Centrality tables
   pcc_cent <- centrality_auto(pcc)[1][[1]]
@@ -222,19 +222,19 @@ for (id in names(result_list)) {
   names(pdc_cent)[2] <- "nodes"
   
   centr <- plyr::rbind.fill(pcc_cent, pdc_cent)
-  write.csv(centr, paste0("05d_Output/Analysis_output/", id, "_centralitytables.csv"), row.names = FALSE)
+  write.csv(centr, paste0("08_Output/Analysis_output/", id, "_centralitytables.csv"), row.names = FALSE)
   
   # Get the edge tables
   # Contemporaneous edges (PCC)
   pcc_edges <- data.frame(pcc[[1]][[1]])
-  write.csv(pcc_edges, paste0("05d_Output/Analysis_output/", id, "_pcc_edges.csv"), row.names = TRUE)
+  write.csv(pcc_edges, paste0("08_Output/Analysis_output/", id, "_pcc_edges.csv"), row.names = TRUE)
   
   # Temporal edges (PDC)
   pdc_edges <- data.frame(pdc[[1]][[1]])
-  write.csv(pdc_edges, paste0("05d_Output/Analysis_output/", id, "_pdc_edges.csv"), row.names = TRUE)
+  write.csv(pdc_edges, paste0("08_Output/Analysis_output/", id, "_pdc_edges.csv"), row.names = TRUE)
   
   # Save workspace image 
-  save.image(file = paste0("05d_Output/Analysis_output/", id, "_network_analysis.RData"))
+  save.image(file = paste0("08_Output/Analysis_output/", id, "_network_analysis.RData"))
   }
 }
 ```
